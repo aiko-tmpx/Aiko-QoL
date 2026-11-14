@@ -169,6 +169,7 @@ end
 function Controls:ApplyModuleStates(registry)
     local nameplatesEnabled = Repository:Get("modules.nameplates.enabled") and true or false
     local audioEnabled = Repository:Get("modules.audio.enabled") and true or false
+    local tooltipEnabled = Repository:Get("modules.tooltip.enabled") and true or false
 
     for _, item in ipairs(registry.items) do
         local enabled = true
@@ -176,6 +177,8 @@ function Controls:ApplyModuleStates(registry)
             enabled = nameplatesEnabled
         elseif item.module == "audio" and item.path ~= "modules.audio.enabled" then
             enabled = audioEnabled
+        elseif item.module == "tooltip" and item.path ~= "modules.tooltip.enabled" then
+            enabled = tooltipEnabled
         end
 
         if item.kind == "checkbox" then

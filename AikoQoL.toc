@@ -17,6 +17,7 @@ Core/ZoneService.lua
 Core/NameplateService.lua
 Core/AudioService.lua
 Core/NotificationService.lua
+Core/TooltipService.lua
 Core/App.lua
 
 UI/SettingsDescriptors.lua

@@ -55,6 +55,9 @@ end
 function App:Init()
     if self.initialized then return end
     ns.Core.Repository:EnsureDB()
+    if ns.Core.TooltipService and ns.Core.TooltipService.Init then
+        ns.Core.TooltipService:Init()
+    end
     self:InitEvents()
     self.initialized = true
 end

@@ -6,6 +6,7 @@ ns.Defaults = {
         modules = {
             nameplates = { enabled = false, notifications = false },
             audio = { enabled = false, notifications = false },
+            tooltip = { enabled = true, showZone = true, showDistance = true },
         },
         zones = {
             raid = { players = false, npcs = false },

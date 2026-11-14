@@ -143,6 +143,7 @@ function SettingsPanel:Register()
     local panels = {
         nameplates = self:BuildSubPanel("nameplates", Descriptors.nameplates),
         audio = self:BuildSubPanel("audio", Descriptors.audio),
+        tooltip = self:BuildSubPanel("tooltip", Descriptors.tooltip),
     }
 
     self.rootPanel = root

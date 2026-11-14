@@ -32,4 +32,15 @@ ns.UI.SettingsDescriptors = {
             { type = "audioMatrix" },
         },
     },
+    tooltip = {
+        moduleKey = "tooltip",
+        title = L["TAB_TOOLTIP"],
+        description = L["DESC_TOOLTIP"],
+        controls = {
+            { type = "checkbox", path = "modules.tooltip.enabled", label = L["MODULE_ENABLED"] },
+            { type = "spacer" },
+            { type = "checkbox", path = "modules.tooltip.showZone", label = L["TOOLTIP_SHOW_ZONE"] },
+            { type = "checkbox", path = "modules.tooltip.showDistance", label = L["TOOLTIP_SHOW_DISTANCE"] },
+        },
+    },
 }
