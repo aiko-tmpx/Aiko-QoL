@@ -144,6 +144,7 @@ function SettingsPanel:Register()
         nameplates = self:BuildSubPanel("nameplates", Descriptors.nameplates),
         audio = self:BuildSubPanel("audio", Descriptors.audio),
         tooltip = self:BuildSubPanel("tooltip", Descriptors.tooltip),
+        chat = self:BuildSubPanel("chat", Descriptors.chat),
     }
 
     self.rootPanel = root

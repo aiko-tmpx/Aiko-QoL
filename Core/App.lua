@@ -15,6 +15,10 @@ function App:Update(isInitialLogin)
     local audioChanged, audioState = ns.Core.AudioService:ApplyForZone(zoneKey)
     local profile = self:GetProfile()
 
+    if ns.Core.ChatService and ns.Core.ChatService.UpdateState then
+        ns.Core.ChatService:UpdateState()
+    end
+
     if isInitialLogin then
         return
     end
@@ -57,6 +61,9 @@ function App:Init()
     ns.Core.Repository:EnsureDB()
     if ns.Core.TooltipService and ns.Core.TooltipService.Init then
         ns.Core.TooltipService:Init()
+    end
+    if ns.Core.ChatService and ns.Core.ChatService.Init then
+        ns.Core.ChatService:Init()
     end
     self:InitEvents()
     self.initialized = true

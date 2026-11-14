@@ -7,6 +7,7 @@ ns.Defaults = {
             nameplates = { enabled = false, notifications = false },
             audio = { enabled = false, notifications = false },
             tooltip = { enabled = false, showZone = true, showDistance = true },
+            chat = { enabled = false, whisperSound = false },
         },
         zones = {
             raid = { players = false, npcs = false },

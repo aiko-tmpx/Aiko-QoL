@@ -43,4 +43,14 @@ ns.UI.SettingsDescriptors = {
             { type = "checkbox", path = "modules.tooltip.showDistance", label = L["TOOLTIP_SHOW_DISTANCE"] },
         },
     },
+    chat = {
+        moduleKey = "chat",
+        title = L["TAB_CHAT"],
+        description = L["DESC_CHAT"],
+        controls = {
+            { type = "checkbox", path = "modules.chat.enabled", label = L["MODULE_ENABLED"] },
+            { type = "spacer" },
+            { type = "checkbox", path = "modules.chat.whisperSound", label = L["CHAT_WHISPER_SOUND"] },
+        },
+    },
 }

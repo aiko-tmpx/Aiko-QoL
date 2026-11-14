@@ -1,8 +1,8 @@
 ## Interface: 120107, 120105, 120100, 120000, 16001
 ## Title: Aiko QoL
-## Notes: QoL utilities (friendly nameplates, audio).
+## Notes: QoL utilities (friendly nameplates, audio, tooltips, chat).
 ## Author: Zagamant, Aiko
-## Version: 1.9.4
+## Version: 1.9.5
 ## X-Curse-Project-ID: 1515225
 ## X-Website: https://github.com/aiko-tmpx/Aiko-QoL
 ## SavedVariables: AikoQoL_DB
@@ -20,6 +20,7 @@ Core/NameplateService.lua
 Core/AudioService.lua
 Core/NotificationService.lua
 Core/TooltipService.lua
+Core/ChatService.lua
 Core/App.lua
 
 UI/SettingsDescriptors.lua
