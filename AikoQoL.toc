@@ -1,6 +1,6 @@
-## Interface: 120000
+## Interface: 120107, 120105, 120100, 120000, 16001
 ## Title: Aiko QoL
-## Notes: QoL utilities for Midnight (friendly nameplates, audio).
+## Notes: QoL utilities (friendly nameplates, audio).
 ## Author: Zagamant, Aiko
 ## Version: 1.9.3
 ## SavedVariables: AikoQoL_DB
