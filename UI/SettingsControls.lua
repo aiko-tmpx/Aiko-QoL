@@ -120,91 +120,54 @@ function Controls:CreateModuleCheckbox(parent, label, path, y, registry, moduleK
     return CreateCheckbox(parent, label, path, 16, y, registry, moduleKey)
 end
 
-function Controls:CreateSliderControl(parent, label, path, minVal, maxVal, step, y, registry, moduleKey)
-    minVal = minVal or 0.35
-    maxVal = maxVal or 1.20
-    step = step or 0.01
-
+function Controls:CreateInputControl(parent, label, path, y, registry, moduleKey)
     local labelFs = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     labelFs:SetPoint("TOPLEFT", 16, y)
     labelFs:SetText(label or "")
 
-    local slider = CreateFrame("Slider", nil, parent, "OptionsSliderTemplate")
-    slider:SetPoint("TOPLEFT", 16, y - 24)
-    slider:SetWidth(220)
-    slider:SetHeight(16)
-    slider:SetMinMaxValues(minVal, maxVal)
-    slider:SetValueStep(step)
-    slider:SetObeyStepOnDrag(true)
-
-    local sliderName = slider:GetName()
-    if sliderName then
-        if _G[sliderName .. "Text"] then _G[sliderName .. "Text"]:SetText("") end
-        if _G[sliderName .. "Low"] then _G[sliderName .. "Low"]:SetText(tostring(minVal)) end
-        if _G[sliderName .. "High"] then _G[sliderName .. "High"]:SetText(tostring(maxVal)) end
-    end
-
     local editbox = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
-    editbox:SetPoint("LEFT", slider, "RIGHT", 24, 0)
-    editbox:SetSize(60, 20)
+    editbox:SetPoint("TOPLEFT", 20, y - 22)
+    editbox:SetSize(80, 22)
     editbox:SetAutoFocus(false)
-    editbox:SetJustifyH("CENTER")
+    editbox:SetJustifyH("LEFT")
 
-    local isUpdating = false
-
-    local function CommitValue(val)
-        val = tonumber(val) or minVal
-        val = math.max(minVal, math.min(maxVal, val))
-        Repository:Set(path, val)
-        ns.Core.App:Update()
+    local isCommitting = false
+    local function Commit()
+        if isCommitting then return end
+        isCommitting = true
+        local val = tonumber(editbox:GetText())
+        if val then
+            val = math.max(0.30, math.min(1.50, val))
+            editbox:SetText(string.format("%.2f", val))
+            Repository:Set(path, val)
+            ns.Core.App:Update()
+        else
+            local current = tonumber(Repository:Get(path)) or 0.59
+            editbox:SetText(string.format("%.2f", current))
+        end
+        editbox:ClearFocus()
+        isCommitting = false
     end
 
-    slider:SetScript("OnValueChanged", function(self, value)
-        if isUpdating then return end
-        isUpdating = true
-        local formatted = string.format("%.2f", value)
-        editbox:SetText(formatted)
-        CommitValue(value)
-        isUpdating = false
-    end)
-
-    editbox:SetScript("OnEnterPressed", function(self)
-        local val = tonumber(self:GetText())
-        if val then
-            isUpdating = true
-            val = math.max(minVal, math.min(maxVal, val))
-            slider:SetValue(val)
-            self:SetText(string.format("%.2f", val))
-            CommitValue(val)
-            isUpdating = false
-        end
-        self:ClearFocus()
-    end)
-
+    editbox:SetScript("OnEnterPressed", Commit)
     editbox:SetScript("OnEscapePressed", function(self)
         self:ClearFocus()
-        local current = tonumber(Repository:Get(path)) or 0.58
+        local current = tonumber(Repository:Get(path)) or 0.59
         self:SetText(string.format("%.2f", current))
     end)
 
     local container = {
-        slider = slider,
         editbox = editbox,
         labelFs = labelFs,
         Refresh = function(self)
-            local current = tonumber(Repository:Get(path)) or 0.58
-            isUpdating = true
-            self.slider:SetValue(current)
+            local current = tonumber(Repository:Get(path)) or 0.59
             self.editbox:SetText(string.format("%.2f", current))
-            isUpdating = false
         end,
         SetLogicalEnabled = function(self, enabled)
             if enabled then
-                self.slider:Enable()
                 self.editbox:Enable()
                 self.labelFs:SetTextColor(1, 0.82, 0)
             else
-                self.slider:Disable()
                 self.editbox:Disable()
                 self.labelFs:SetTextColor(0.5, 0.5, 0.5)
             end
@@ -212,7 +175,7 @@ function Controls:CreateSliderControl(parent, label, path, minVal, maxVal, step,
     }
 
     container:Refresh()
-    RegisterWidget(registry, "sliderControl", container, moduleKey, path)
+    RegisterWidget(registry, "inputControl", container, moduleKey, path)
     return container
 end
 
@@ -285,7 +248,7 @@ function Controls:ApplyModuleStates(registry)
 
         if item.kind == "checkbox" then
             item.widget:SetLogicalEnabled(enabled)
-        elseif item.kind == "sliderControl" then
+        elseif item.kind == "inputControl" then
             item.widget:SetLogicalEnabled(enabled)
         elseif item.kind == "text" then
             item.widget:SetTextColor(enabled and 1 or 0.5, enabled and 0.82 or 0.5, 0)

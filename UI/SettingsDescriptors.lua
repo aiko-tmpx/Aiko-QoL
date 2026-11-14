@@ -60,7 +60,7 @@ ns.UI.SettingsDescriptors = {
         controls = {
             { type = "checkbox", path = "modules.scale.enabled", label = L["MODULE_ENABLED"] },
             { type = "spacer" },
-            { type = "slider", path = "modules.scale.value", label = L["SCALE_SLIDER_LABEL"], minVal = 0.35, maxVal = 1.20, step = 0.01 },
+            { type = "input", path = "modules.scale.value", label = L["SCALE_SLIDER_LABEL"] },
         },
     },
 }

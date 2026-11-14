@@ -48,9 +48,9 @@ function SettingsPanel:BuildControl(parent, moduleKey, control, y, registry)
         Controls:CreateOptimizeButton(parent, control.label, moduleKey, y, registry)
         return y - 34
     end
-    if control.type == "slider" then
-        Controls:CreateSliderControl(parent, control.label, control.path, control.minVal, control.maxVal, control.step, y, registry, moduleKey)
-        return y - 56
+    if control.type == "input" then
+        Controls:CreateInputControl(parent, control.label, control.path, y, registry, moduleKey)
+        return y - 48
     end
     if control.type == "spacer" then
         return y - 8
@@ -165,6 +165,11 @@ function SettingsPanel:Register()
 end
 
 function SettingsPanel:Open()
+    if InCombatLockdown and InCombatLockdown() then
+        print(string.format("|cffA330C9Aiko QoL:|r %s", ns.L["ERR_COMBAT"] or "Settings cannot be opened while in combat."))
+        return
+    end
+
     self:Register()
 
     if Settings and Settings.OpenToCategory and self.rootCategory then
