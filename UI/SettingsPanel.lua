@@ -178,15 +178,6 @@ end
 SLASH_AIKOQOL1 = "/aiko"
 SLASH_AIKOQOL2 = "/aqol"
 SLASH_AIKOQOL3 = "/aikoqol"
-SlashCmdList["AIKOQOL"] = function(msg)
-    msg = msg and strtrim(msg) or ""
-    local scaleVal = msg:match("^scale%s+([%d%.]+)")
-    if scaleVal and ns.Core.ScaleService then
-        local ok, applied = ns.Core.ScaleService:SetScaleValue(scaleVal)
-        if ok then
-            print(string.format("|cffA330C9Aiko QoL:|r " .. (ns.L["SCALE_SET_MESSAGE"] or "UI Scale set to %s."), string.format("%.2f", applied)))
-            return
-        end
-    end
+SlashCmdList["AIKOQOL"] = function()
     SettingsPanel:Open()
 end

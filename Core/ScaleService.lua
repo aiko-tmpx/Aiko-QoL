@@ -58,26 +58,6 @@ function ScaleService:QueueApply(delay)
     end)
 end
 
-function ScaleService:SetScaleValue(val)
-    local num = tonumber(val)
-    if not num then return false end
-    num = math.max(0.30, math.min(1.50, num))
-
-    ns.Core.Repository:Set("modules.scale.value", num)
-    ns.Core.Repository:Set("modules.scale.enabled", true)
-
-    self:Apply()
-
-    if ns.UI.SettingsPanel and ns.UI.SettingsPanel.isRegistered then
-        -- Refresh settings controls if open
-        local panel = ns.UI.SettingsPanel.panels and ns.UI.SettingsPanel.panels.scale
-        if panel and panel.registry and panel.registry.RefreshAll then
-            panel.registry:RefreshAll()
-        end
-    end
-    return true, num
-end
-
 function ScaleService:Init()
     if self.initialized then return end
     self.initialized = true
