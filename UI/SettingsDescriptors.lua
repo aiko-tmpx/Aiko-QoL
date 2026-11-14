@@ -53,4 +53,14 @@ ns.UI.SettingsDescriptors = {
             { type = "checkbox", path = "modules.chat.whisperSound", label = L["CHAT_WHISPER_SOUND"] },
         },
     },
+    scale = {
+        moduleKey = "scale",
+        title = L["TAB_SCALE"],
+        description = L["DESC_SCALE"],
+        controls = {
+            { type = "checkbox", path = "modules.scale.enabled", label = L["MODULE_ENABLED"] },
+            { type = "spacer" },
+            { type = "slider", path = "modules.scale.value", label = L["SCALE_SLIDER_LABEL"], minVal = 0.35, maxVal = 1.20, step = 0.01 },
+        },
+    },
 }

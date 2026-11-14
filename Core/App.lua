@@ -18,6 +18,9 @@ function App:Update(isInitialLogin)
     if ns.Core.ChatService and ns.Core.ChatService.UpdateState then
         ns.Core.ChatService:UpdateState()
     end
+    if ns.Core.ScaleService and ns.Core.ScaleService.Apply then
+        ns.Core.ScaleService:Apply()
+    end
 
     if isInitialLogin then
         return
@@ -64,6 +67,9 @@ function App:Init()
     end
     if ns.Core.ChatService and ns.Core.ChatService.Init then
         ns.Core.ChatService:Init()
+    end
+    if ns.Core.ScaleService and ns.Core.ScaleService.Init then
+        ns.Core.ScaleService:Init()
     end
     self:InitEvents()
     self.initialized = true

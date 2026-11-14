@@ -48,6 +48,10 @@ function SettingsPanel:BuildControl(parent, moduleKey, control, y, registry)
         Controls:CreateOptimizeButton(parent, control.label, moduleKey, y, registry)
         return y - 34
     end
+    if control.type == "slider" then
+        Controls:CreateSliderControl(parent, control.label, control.path, control.minVal, control.maxVal, control.step, y, registry, moduleKey)
+        return y - 56
+    end
     if control.type == "spacer" then
         return y - 8
     end
@@ -145,6 +149,7 @@ function SettingsPanel:Register()
         audio = self:BuildSubPanel("audio", Descriptors.audio),
         tooltip = self:BuildSubPanel("tooltip", Descriptors.tooltip),
         chat = self:BuildSubPanel("chat", Descriptors.chat),
+        scale = self:BuildSubPanel("scale", Descriptors.scale),
     }
 
     self.rootPanel = root
@@ -173,6 +178,15 @@ end
 SLASH_AIKOQOL1 = "/aiko"
 SLASH_AIKOQOL2 = "/aqol"
 SLASH_AIKOQOL3 = "/aikoqol"
-SlashCmdList["AIKOQOL"] = function()
+SlashCmdList["AIKOQOL"] = function(msg)
+    msg = msg and strtrim(msg) or ""
+    local scaleVal = msg:match("^scale%s+([%d%.]+)")
+    if scaleVal and ns.Core.ScaleService then
+        local ok, applied = ns.Core.ScaleService:SetScaleValue(scaleVal)
+        if ok then
+            print(string.format("|cffA330C9Aiko QoL:|r " .. (ns.L["SCALE_SET_MESSAGE"] or "UI Scale set to %s."), string.format("%.2f", applied)))
+            return
+        end
+    end
     SettingsPanel:Open()
 end

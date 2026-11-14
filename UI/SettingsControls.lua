@@ -120,6 +120,102 @@ function Controls:CreateModuleCheckbox(parent, label, path, y, registry, moduleK
     return CreateCheckbox(parent, label, path, 16, y, registry, moduleKey)
 end
 
+function Controls:CreateSliderControl(parent, label, path, minVal, maxVal, step, y, registry, moduleKey)
+    minVal = minVal or 0.35
+    maxVal = maxVal or 1.20
+    step = step or 0.01
+
+    local labelFs = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    labelFs:SetPoint("TOPLEFT", 16, y)
+    labelFs:SetText(label or "")
+
+    local slider = CreateFrame("Slider", nil, parent, "OptionsSliderTemplate")
+    slider:SetPoint("TOPLEFT", 16, y - 24)
+    slider:SetWidth(220)
+    slider:SetHeight(16)
+    slider:SetMinMaxValues(minVal, maxVal)
+    slider:SetValueStep(step)
+    slider:SetObeyStepOnDrag(true)
+
+    local sliderName = slider:GetName()
+    if sliderName then
+        if _G[sliderName .. "Text"] then _G[sliderName .. "Text"]:SetText("") end
+        if _G[sliderName .. "Low"] then _G[sliderName .. "Low"]:SetText(tostring(minVal)) end
+        if _G[sliderName .. "High"] then _G[sliderName .. "High"]:SetText(tostring(maxVal)) end
+    end
+
+    local editbox = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
+    editbox:SetPoint("LEFT", slider, "RIGHT", 24, 0)
+    editbox:SetSize(60, 20)
+    editbox:SetAutoFocus(false)
+    editbox:SetJustifyH("CENTER")
+
+    local isUpdating = false
+
+    local function CommitValue(val)
+        val = tonumber(val) or minVal
+        val = math.max(minVal, math.min(maxVal, val))
+        Repository:Set(path, val)
+        ns.Core.App:Update()
+    end
+
+    slider:SetScript("OnValueChanged", function(self, value)
+        if isUpdating then return end
+        isUpdating = true
+        local formatted = string.format("%.2f", value)
+        editbox:SetText(formatted)
+        CommitValue(value)
+        isUpdating = false
+    end)
+
+    editbox:SetScript("OnEnterPressed", function(self)
+        local val = tonumber(self:GetText())
+        if val then
+            isUpdating = true
+            val = math.max(minVal, math.min(maxVal, val))
+            slider:SetValue(val)
+            self:SetText(string.format("%.2f", val))
+            CommitValue(val)
+            isUpdating = false
+        end
+        self:ClearFocus()
+    end)
+
+    editbox:SetScript("OnEscapePressed", function(self)
+        self:ClearFocus()
+        local current = tonumber(Repository:Get(path)) or 0.58
+        self:SetText(string.format("%.2f", current))
+    end)
+
+    local container = {
+        slider = slider,
+        editbox = editbox,
+        labelFs = labelFs,
+        Refresh = function(self)
+            local current = tonumber(Repository:Get(path)) or 0.58
+            isUpdating = true
+            self.slider:SetValue(current)
+            self.editbox:SetText(string.format("%.2f", current))
+            isUpdating = false
+        end,
+        SetLogicalEnabled = function(self, enabled)
+            if enabled then
+                self.slider:Enable()
+                self.editbox:Enable()
+                self.labelFs:SetTextColor(1, 0.82, 0)
+            else
+                self.slider:Disable()
+                self.editbox:Disable()
+                self.labelFs:SetTextColor(0.5, 0.5, 0.5)
+            end
+        end,
+    }
+
+    container:Refresh()
+    RegisterWidget(registry, "sliderControl", container, moduleKey, path)
+    return container
+end
+
 function Controls:BuildZoneHeader(parent, y, registry)
     self:CreateHeaderText(parent, ns.L["ZONE"], 16, y, registry, "nameplates")
     self:CreateHeaderText(parent, ns.L["PLAYERS"], 250, y, registry, "nameplates")
@@ -171,6 +267,7 @@ function Controls:ApplyModuleStates(registry)
     local audioEnabled = Repository:Get("modules.audio.enabled") and true or false
     local tooltipEnabled = Repository:Get("modules.tooltip.enabled") and true or false
     local chatEnabled = Repository:Get("modules.chat.enabled") and true or false
+    local scaleEnabled = Repository:Get("modules.scale.enabled") and true or false
 
     for _, item in ipairs(registry.items) do
         local enabled = true
@@ -182,9 +279,13 @@ function Controls:ApplyModuleStates(registry)
             enabled = tooltipEnabled
         elseif item.module == "chat" and item.path ~= "modules.chat.enabled" then
             enabled = chatEnabled
+        elseif item.module == "scale" and item.path ~= "modules.scale.enabled" then
+            enabled = scaleEnabled
         end
 
         if item.kind == "checkbox" then
+            item.widget:SetLogicalEnabled(enabled)
+        elseif item.kind == "sliderControl" then
             item.widget:SetLogicalEnabled(enabled)
         elseif item.kind == "text" then
             item.widget:SetTextColor(enabled and 1 or 0.5, enabled and 0.82 or 0.5, 0)

@@ -20,6 +20,7 @@ local function EnsureModuleTables(profile, defaults)
     TableUtils:EnsureTable(profile.modules, "audio", defaults.profile.modules.audio)
     TableUtils:EnsureTable(profile.modules, "tooltip", defaults.profile.modules.tooltip)
     TableUtils:EnsureTable(profile.modules, "chat", defaults.profile.modules.chat)
+    TableUtils:EnsureTable(profile.modules, "scale", defaults.profile.modules.scale)
 end
 
 local function EnsureAudioTables(profile, defaults)

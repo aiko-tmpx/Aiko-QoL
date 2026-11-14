@@ -8,6 +8,7 @@ ns.Defaults = {
             audio = { enabled = false, notifications = false },
             tooltip = { enabled = false, showZone = true, showDistance = true },
             chat = { enabled = false, whisperSound = false },
+            scale = { enabled = false, value = 0.58 },
         },
         zones = {
             raid = { players = false, npcs = false },
