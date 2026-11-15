@@ -45,18 +45,36 @@ local LANG_LOCALE_KEYS = {
 -- Instance MapID -> World Area IDs (dungeon entrance zones) decoupled into Core/LfgData.lua
 local INSTANCE_ZONE_AREAS = (ns.LfgData and ns.LfgData.INSTANCE_ZONE_AREAS) or {}
 
+local DUNGEON_NAME_AREAS = {
+    ["The Drowned City"] = {33},
+    ["City of Dalaran"] = {36, 130, 267},
+    ["Hall of Thanes"] = {1, 1537},
+    ["The Hall of Thanes"] = {1, 1537},
+    ["Ruins of Lordaeron"] = {85, 1497},
+    ["The Ruins of Lordaeron"] = {85, 1497},
+    ["Excavation Site: Wetlands"] = {11},
+    ["Krol'dok Stronghold"] = {44, 2548},
+    ["Alcaz Prison"] = {15},
+    ["Blackmaw Hold"] = {16},
+    ["Shaper's Terrace"] = {490},
+    ["The Shaper's Terrace"] = {490},
+}
+
 local instanceZoneNamesCache = {}
-local function GetInstanceZoneNames(mapID)
-    if not mapID or mapID <= 0 then return nil end
-    if instanceZoneNamesCache[mapID] then return instanceZoneNamesCache[mapID] end
+local function GetInstanceZoneNames(mapID, actName)
+    local cacheKey = tostring(mapID or 0) .. "_" .. tostring(actName or "")
+    if instanceZoneNamesCache[cacheKey] then return instanceZoneNamesCache[cacheKey] end
     local names = {}
-    local instanceName = GetRealZoneText and GetRealZoneText(mapID)
+    local instanceName = (mapID and mapID > 0 and GetRealZoneText) and GetRealZoneText(mapID)
     if instanceName and instanceName ~= "" then names[instanceName] = true end
-    for _, areaID in ipairs(INSTANCE_ZONE_AREAS[mapID] or {}) do
-        local areaName = C_Map and C_Map.GetAreaInfo and C_Map.GetAreaInfo(areaID)
-        if areaName and areaName ~= "" then names[areaName] = true end
+    local areaIDs = (mapID and INSTANCE_ZONE_AREAS[mapID]) or (actName and DUNGEON_NAME_AREAS[actName])
+    if areaIDs then
+        for _, areaID in ipairs(areaIDs) do
+            local areaName = C_Map and C_Map.GetAreaInfo and C_Map.GetAreaInfo(areaID)
+            if areaName and areaName ~= "" then names[areaName] = true end
+        end
     end
-    instanceZoneNamesCache[mapID] = names
+    instanceZoneNamesCache[cacheKey] = names
     return names
 end
 
@@ -66,7 +84,7 @@ local function IsMemberNearActivity(resultID, resultInfo)
     local hasZone = false
     for _, activityID in ipairs(resultInfo.activityIDs or {}) do
         local activityInfo = C_LFGList.GetActivityInfoTable(activityID)
-        local names = activityInfo and GetInstanceZoneNames(activityInfo.mapID)
+        local names = activityInfo and GetInstanceZoneNames(activityInfo.mapID, activityInfo.shortName or activityInfo.fullName)
         if names then
             for name in pairs(names) do
                 zoneNames[name] = true
@@ -106,6 +124,86 @@ local ENGLISH_CLASS_NAMES = {
     MAGE = "Mage", WARLOCK = "Warlock", DRUID = "Druid"
 }
 
+local CLASS_SPEC_NAMES = {
+    WARRIOR = { "Arms", "Fury", "Prot" },
+    PALADIN = { "Holy", "Prot", "Ret" },
+    HUNTER = { "BM", "MM", "Surv" },
+    ROGUE = { "Assassination", "Combat", "Sub" },
+    PRIEST = { "Disc", "Holy", "Shadow" },
+    SHAMAN = { "Ele", "Enh", "Resto" },
+    MAGE = { "Arcane", "Fire", "Frost" },
+    WARLOCK = { "Affliction", "Demonology", "Destruction" },
+    DRUID = { "Balance", "Feral", "Resto" },
+}
+
+function LfgService:GetPlayerSpecName(classFilename)
+    if not classFilename then return nil end
+    local specNames = CLASS_SPEC_NAMES[classFilename]
+    if not specNames then return nil end
+
+    local bestIndex, bestSpent = nil, 0
+
+    -- Modern client / Project Epoch C_Traits API
+    if C_SpecializationInfo and C_Traits then
+        local specGroup = C_SpecializationInfo.GetActiveSpecGroup and C_SpecializationInfo.GetActiveSpecGroup()
+        local configID = specGroup and C_SpecializationInfo.GetCombatConfigIDForSpecGroup and C_SpecializationInfo.GetCombatConfigIDForSpecGroup(specGroup)
+        local configInfo = configID and C_Traits.GetConfigInfo and C_Traits.GetConfigInfo(configID)
+        local treeID = configInfo and configInfo.treeIDs and configInfo.treeIDs[1]
+        local displayInfos = treeID and C_Traits.GetGroupDisplayInfoByTreeID and C_Traits.GetGroupDisplayInfoByTreeID(treeID)
+
+        if displayInfos and #displayInfos > 0 then
+            local groupIDs = {}
+            for _, info in ipairs(displayInfos) do
+                groupIDs[#groupIDs + 1] = info.groupID
+            end
+
+            local spentByGroup = {}
+            local currencies = C_Traits.GetGroupCurrencyInfo and C_Traits.GetGroupCurrencyInfo(configID, groupIDs)
+            if currencies then
+                for _, groupInfo in ipairs(currencies) do
+                    local currencyInfo = groupInfo.currencyInfos and groupInfo.currencyInfos[1]
+                    if currencyInfo and groupInfo.traitNodeGroupID then
+                        spentByGroup[groupInfo.traitNodeGroupID] = currencyInfo.spent or 0
+                    end
+                end
+            end
+
+            local trees = {}
+            for _, info in ipairs(displayInfos) do
+                trees[#trees + 1] = {
+                    orderIndex = info.orderIndex or 0,
+                    spent = spentByGroup[info.groupID] or 0,
+                }
+            end
+            table.sort(trees, function(a, b) return a.orderIndex < b.orderIndex end)
+
+            for i, tree in ipairs(trees) do
+                if tree.spent > bestSpent then
+                    bestIndex, bestSpent = i, tree.spent
+                end
+            end
+        end
+    end
+
+    -- Classic / fallback talent API
+    if not bestIndex and GetNumTalentTabs and GetTalentTabInfo then
+        local numTabs = GetNumTalentTabs()
+        if numTabs and numTabs > 0 then
+            for i = 1, numTabs do
+                local _, _, pointsSpent = GetTalentTabInfo(i)
+                if pointsSpent and pointsSpent > bestSpent then
+                    bestIndex, bestSpent = i, pointsSpent
+                end
+            end
+        end
+    end
+
+    if bestIndex and bestSpent > 0 then
+        return specNames[bestIndex]
+    end
+    return nil
+end
+
 function LfgService:IsPlayerNearActivity(activityIDs)
     if not activityIDs then return false end
     local currentZone = GetRealZoneText and GetRealZoneText()
@@ -115,8 +213,8 @@ function LfgService:IsPlayerNearActivity(activityIDs)
 
     for _, activityID in ipairs(activityIDs) do
         local actInfo = C_LFGList.GetActivityInfoTable(activityID)
-        if actInfo and actInfo.mapID then
-            local zoneNames = GetInstanceZoneNames(actInfo.mapID)
+        if actInfo then
+            local zoneNames = GetInstanceZoneNames(actInfo.mapID, actInfo.shortName or actInfo.fullName)
             if zoneNames then
                 if currentZone and zoneNames[currentZone] then return true end
                 if currentSubZone and zoneNames[currentSubZone] then return true end
@@ -130,13 +228,15 @@ end
 function LfgService:GetAutoWhisperMessage(resultInfo)
     local _, classFilename = UnitClass("player")
     local className = ENGLISH_CLASS_NAMES[classFilename] or "Player"
+    local specName = self:GetPlayerSpecName(classFilename)
+    local classDisplay = (specName and specName ~= "") and (specName .. " " .. className) or className
     local level = UnitLevel("player") or 0
     local isNear = self:IsPlayerNearActivity(resultInfo and resultInfo.activityIDs)
 
     if isNear then
-        return string.format("Hi! Lvl %d %s. Already near dungeon, inv please!", level, className)
+        return string.format("Hi! Lvl %d %s. Already near dungeon, inv please!", level, classDisplay)
     else
-        return string.format("Hi! Lvl %d %s, inv please!", level, className)
+        return string.format("Hi! Lvl %d %s, inv please!", level, classDisplay)
     end
 end
 
@@ -172,29 +272,39 @@ function LfgService:GetClientLocale()
 end
 
 function LfgService:GetAvailableLanguages()
-    if self.availableLanguages then return self.availableLanguages end
+    if self.availableLanguages and #self.availableLanguages > 0 then
+        return self.availableLanguages
+    end
 
-    local region = GetCurrentRegion and GetCurrentRegion() or 3
-    local allowedList = REGION_LANGUAGES[region] or REGION_LANGUAGES[3]
+    local apiLangs = C_LFGList and C_LFGList.GetAvailableLanguageSearchFilter and C_LFGList.GetAvailableLanguageSearchFilter()
+    local isDynamic = type(apiLangs) == "table" and #apiLangs > 0
+    local sourceList = isDynamic and apiLangs
+    if not sourceList then
+        local region = GetCurrentRegion and GetCurrentRegion() or 3
+        sourceList = REGION_LANGUAGES[region] or REGION_LANGUAGES[3]
+    end
 
     local langs = {}
     local seen = {}
     local clientLocale = self:GetClientLocale()
 
-    for _, code in ipairs(allowedList) do
-        if not seen[code] then
+    for _, code in ipairs(sourceList) do
+        if type(code) == "string" and not seen[code] then
             langs[#langs + 1] = code
             seen[code] = true
         end
     end
 
-    if not seen[clientLocale] then
+    if clientLocale and not seen[clientLocale] then
         table.insert(langs, 1, clientLocale)
         seen[clientLocale] = true
     end
 
-    self.availableLanguages = langs
-    return self.availableLanguages
+    if isDynamic then
+        self.availableLanguages = langs
+    end
+
+    return langs
 end
 
 function LfgService:GetLanguageDisplayName(code)
@@ -269,17 +379,11 @@ end
 
 function LfgService:SortResults(results)
     local contexts = {}
-    local blockRanks = { count = 0 }
     for index, resultID in ipairs(results) do
         local info = C_LFGList.GetSearchResultInfo(resultID)
         local block = 0
         if info and not info.hasSelf then
-            local bType = (info.numMembers == 1) and "SOLO" or "GROUP"
-            if not blockRanks[bType] then
-                blockRanks.count = blockRanks.count + 1
-                blockRanks[bType] = blockRanks.count
-            end
-            block = blockRanks[bType]
+            block = (info.numMembers and info.numMembers > 1) and 1 or 2
         end
 
         contexts[resultID] = {
@@ -626,21 +730,26 @@ local function DecorateRow(row)
         end)
     else
         btn.tooltipText = (L["LFG_BTN_WHISPER"] or WHISPER or "Whisper") .. "\n|cff888888Shift-Click: Edit before sending|r"
-        btn:SetEnabled(true)
+        local leader = info.leaderName
+        local leaderAccessible = (canaccessvalue == nil) or canaccessvalue(leader)
+        btn:SetEnabled(leaderAccessible and leader ~= nil and leader ~= "")
         btn:SetScript("OnClick", function()
-            local leader = info.leaderName
-            if leader and leader ~= "" then
+            local currentLeader = info.leaderName
+            if canaccessvalue and not canaccessvalue(currentLeader) then
+                return
+            end
+            if currentLeader and currentLeader ~= "" then
                 local profile = ns.Core.Repository and ns.Core.Repository:GetProfile()
                 local autoWhisper = profile and profile.modules and profile.modules.lfg and profile.modules.lfg.autoWhisper ~= false
                 if autoWhisper then
                     local msg = LfgService:GetAutoWhisperMessage(info)
                     if IsShiftKeyDown() then
-                        ChatFrame_OpenChat("/w " .. leader .. " " .. msg)
+                        ChatFrame_OpenChat("/w " .. currentLeader .. " " .. msg)
                     else
-                        SendChatMessage(msg, "WHISPER", nil, leader)
+                        SendChatMessage(msg, "WHISPER", nil, currentLeader)
                     end
                 else
-                    ChatFrame_OpenChat("/w " .. leader .. " ")
+                    ChatFrame_OpenChat("/w " .. currentLeader .. " ")
                 end
             end
         end)
@@ -654,9 +763,9 @@ local function DecorateRow(row)
     if row.PlaystyleLabel then row.PlaystyleLabel:Hide() end
 
     if not row.AikoZoneText then
-        local zone = row:CreateFontString(nil, "OVERLAY", "GameFontGreenSmall")
-        if not zone:GetFont() then zone:SetFontObject("GameFontGreen") end
-        zone:SetHeight(14)
+        local zone = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        if not zone:GetFont() then zone:SetFontObject("GameFontNormal") end
+        zone:SetHeight(16)
         zone:SetWordWrap(false)
         zone:SetJustifyH("LEFT")
         row.AikoZoneText = zone
@@ -664,6 +773,12 @@ local function DecorateRow(row)
 
     local area = member and member.areaName
     if area and area ~= "" then
+        local isNear = IsMemberNearActivity(row.resultID, info)
+        if isNear then
+            row.AikoZoneText:SetTextColor(0.25, 0.95, 0.25)
+        else
+            row.AikoZoneText:SetTextColor(1.0, 0.35, 0.35)
+        end
         local prefix = L["LFG_ZONE_PREFIX"] or (solo and "Zone: " or "Leader zone: ")
         row.AikoZoneText:SetText(prefix .. area)
         row.AikoZoneText:ClearAllPoints()

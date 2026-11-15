@@ -52,5 +52,16 @@ ns.LfgData.INSTANCE_ZONE_AREAS = {
     [531] = {1377},       -- Temple of Ahn'Qiraj (Silithus)
     [249] = {15},         -- Onyxia's Lair (Dustwallow Marsh)
     [533] = {139},        -- Naxxramas (Eastern Plaguelands)
-    [572] = {1497, 85}    -- Karazhan (Deadwind Pass)
+    [572] = {1497, 85},   -- Karazhan (Deadwind Pass)
+
+    -- WoW Forever Exclusive Dungeons (Icy Veins)
+    [3065] = {1, 1537},      -- Hall of Thanes (Dun Morogh, Ironforge)
+    [2999] = {85, 1497},     -- Ruins of Lordaeron (Tirisfal Glades, Undercity)
+    [2998] = {11},           -- Excavation Site: Wetlands (Wetlands)
+    [2959] = {36, 130, 267}, -- City of Dalaran (Alterac Mountains, Silverpine, Hillsbrad)
+    [2970] = {33},           -- The Drowned City (Stranglethorn Vale)
+    [3039] = {44, 2548},     -- Krol'dok Stronghold (Redridge Mountains, Riverglades)
+    [2994] = {15},           -- Alcaz Prison (Dustwallow Marsh)
+    [2974] = {16},           -- Blackmaw Hold (Azshara)
+    [3001] = {490},          -- Shaper's Terrace (Un'Goro Crater)
 }

@@ -4,8 +4,20 @@ This document tracks identified architectural improvements, technical debt, and 
 
 ---
 
+## 🟡 Planned / Backlog
+
+*(All pending backlog tickets completed)*
+
+---
+
 ## 🔴 Completed
 
+- [x] **Player Talent Spec Detection in Auto-Whisper (`%spec% %class%`)**
+  - Determined the player's active specialization based on talent tree point allocation using modern `C_SpecializationInfo` and `C_Traits` API (with fallback to Classic `GetTalentTabInfo`). Dominant spec name is dynamically prefixed to class in auto-whisper (e.g., `"Hi! Lvl 60 Arms Warrior, inv please!"`).
+- [x] **Dynamic Language Discovery via `C_LFGList.GetAvailableLanguageSearchFilter()`**
+  - Replaced static `REGION_LANGUAGES` fallback table with dynamic client/server API `C_LFGList.GetAvailableLanguageSearchFilter()` to support all realm-available languages regardless of `GetCurrentRegion()`.
+- [x] **Secret String & Taint Protection in Combat Lockdown**
+  - Guarded `info.leaderName` reading and auto-whisper sending with `canaccessvalue(info.leaderName)` to prevent `attempt to concatenate a secret string` errors during combat or chat messaging lockdown.
 - [x] **Dynamic Module Schema Migration in `Repository.lua`**
   - Added `TableUtils:EnsureTable(profile.modules, "lfg", defaults.profile.modules.lfg)` and fallback for `autoWhisper`.
 - [x] **Integrate `LfgService` into `App:Update()` Pipeline**
