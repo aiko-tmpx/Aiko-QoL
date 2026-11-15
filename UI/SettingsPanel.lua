@@ -152,6 +152,10 @@ function SettingsPanel:Register()
         scale = self:BuildSubPanel("scale", Descriptors.scale),
     }
 
+    if Descriptors.lfg and (select(4, GetBuildInfo()) == 16001 or ns.IsDev) then
+        panels.lfg = self:BuildSubPanel("lfg", Descriptors.lfg)
+    end
+
     self.rootPanel = root
     self.panels = panels
 

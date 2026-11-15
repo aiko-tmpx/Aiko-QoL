@@ -22,8 +22,9 @@ Core/NotificationService.lua
 Core/TooltipService.lua
 Core/ChatService.lua
 Core/ScaleService.lua
+UI/LfgFilterPanel.lua
+Core/LfgService.lua
 Core/App.lua
-
 UI/SettingsDescriptors.lua
 UI/SettingsControls.lua
 UI/SettingsPanel.lua
