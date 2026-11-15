@@ -6,12 +6,17 @@ This document tracks identified architectural improvements, technical debt, and 
 
 ## 🟡 Planned / Backlog
 
-*(All pending backlog tickets completed)*
+- [ ] **LFG Filter State Persistence in SavedVariables**
+  - Save and restore selected LFG filters (roles, hidden classes, and custom languages) in `AikoQoL_DB` via `Repository.lua` so player preferences persist across `/reload` and relogs instead of resetting to default.
+- [ ] **Pending Invite State Indicator for Action Buttons**
+  - Add visual feedback when clicking the invite action button (`+`): temporarily mark the row / button as pending (e.g., `⏳` or dimmed state for 15s) to prevent spamming invitations to the same player.
 
 ---
 
 ## 🔴 Completed
 
+- [x] **Decouple LFG Entry Row Rendering from `Core/LfgService.lua`**
+  - Extracted row decoration logic (`DecorateRow`, `SetupDfChipButton`, `AikoZoneText`, `AikoInviteButton`) from `Core/LfgService.lua` into dedicated `UI/LfgRowDecorator.lua` under `ns.UI.LfgRowDecorator`, reducing `LfgService` size and isolating view rendering from business logic.
 - [x] **Player Talent Spec Detection in Auto-Whisper (`%spec% %class%`)**
   - Determined the player's active specialization based on talent tree point allocation using modern `C_SpecializationInfo` and `C_Traits` API (with fallback to Classic `GetTalentTabInfo`). Dominant spec name is dynamically prefixed to class in auto-whisper (e.g., `"Hi! Lvl 60 Arms Warrior, inv please!"`).
 - [x] **Dynamic Language Discovery via `C_LFGList.GetAvailableLanguageSearchFilter()`**
