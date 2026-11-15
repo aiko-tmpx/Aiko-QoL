@@ -479,8 +479,94 @@ function LfgService:DoSearch()
 end
 
 -- =========================================================================
--- ROW DECORATION (Invite Button & Zone line)
+-- ROW DECORATION (Variant 3: DF Squircle Chip Action Button & Zone line)
 -- =========================================================================
+local CHIP_BORDER_NORMAL = { r = 0.38, g = 0.32, b = 0.22, a = 0.90 }
+local CHIP_BORDER_HOVER  = { r = 1.00, g = 0.82, b = 0.20, a = 1.00 }
+local CHIP_BG_NORMAL     = { r = 0.12, g = 0.10, b = 0.09, a = 0.85 }
+local CHIP_BG_HOVER      = { r = 0.20, g = 0.17, b = 0.14, a = 0.95 }
+
+local function UpdateChipGlyphColor(btn, r, g, b, a)
+    if btn.PlusIcon and btn.PlusIcon:IsShown() then
+        btn.PlusIcon:SetVertexColor(r, g, b, a)
+    end
+    if btn.PlusH and btn.PlusH:IsShown() then
+        btn.PlusH:SetColorTexture(r, g, b, a)
+        btn.PlusV:SetColorTexture(r, g, b, a)
+    end
+    if btn.Chevron and btn.Chevron:IsShown() then
+        btn.Chevron:SetVertexColor(r, g, b, a)
+    end
+    if btn.ChevronText and btn.ChevronText:IsShown() then
+        btn.ChevronText:SetTextColor(r, g, b, a)
+    end
+end
+
+local function SetupDfChipButton(btn, isSolo)
+    btn:SetSize(22, 22)
+    btn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 1, right = 1, top = 1, bottom = 1 }
+    })
+    btn:SetBackdropColor(CHIP_BG_NORMAL.r, CHIP_BG_NORMAL.g, CHIP_BG_NORMAL.b, CHIP_BG_NORMAL.a)
+    btn:SetBackdropBorderColor(CHIP_BORDER_NORMAL.r, CHIP_BORDER_NORMAL.g, CHIP_BORDER_NORMAL.b, CHIP_BORDER_NORMAL.a)
+
+    -- Hide old components if any
+    if btn.Text then btn.Text:Hide() end
+    if btn.Icon then btn.Icon:Hide() end
+    if btn.PlusH then btn.PlusH:Hide() end
+    if btn.PlusV then btn.PlusV:Hide() end
+
+    -- 1. Sharp texture icon "+" for Solo invites (custom TGA with fallback)
+    if not btn.PlusIcon then
+        local plus = btn:CreateTexture(nil, "ARTWORK")
+        plus:SetSize(16, 16)
+        plus:SetPoint("CENTER", 0, 0)
+        plus:SetTexture("Interface\\AddOns\\AikoQoL\\Media\\plus.tga")
+        if not plus:GetTexture() then
+            -- Fallback if client was running when TGA was added
+            local ok = pcall(plus.SetAtlas, plus, "Garr_Building-AddFollowerPlus")
+            if not ok or not plus:GetTexture() then
+                plus:SetTexture("Interface\\Buttons\\UI-PlusButton-Up")
+            end
+        end
+        btn.PlusIcon = plus
+    end
+
+    -- 2. Sharp modern forward chevron ">" for Group whispers
+    if not btn.Chevron and not btn.ChevronText then
+        local chevron = btn:CreateTexture(nil, "ARTWORK")
+        chevron:SetSize(8, 12)
+        chevron:SetPoint("CENTER", 0.5, 0)
+        local ok = pcall(chevron.SetAtlas, chevron, "common-icon-forwardarrow", false)
+        if ok and chevron:GetTexture() then
+            btn.Chevron = chevron
+        else
+            chevron:Hide()
+            local txt = btn:CreateFontString(nil, "ARTWORK")
+            txt:SetFont("Fonts\\FRIZQT__.TTF", 13, "")
+            txt:SetShadowOffset(0, 0)
+            txt:SetPoint("CENTER", 0.5, 0)
+            txt:SetText(">")
+            btn.ChevronText = txt
+        end
+    end
+
+    if isSolo then
+        btn.PlusIcon:Show()
+        if btn.Chevron then btn.Chevron:Hide() end
+        if btn.ChevronText then btn.ChevronText:Hide() end
+    else
+        btn.PlusIcon:Hide()
+        if btn.Chevron then btn.Chevron:Show() end
+        if btn.ChevronText then btn.ChevronText:Show() end
+    end
+
+    UpdateChipGlyphColor(btn, 1.0, 0.82, 0.20, 1.0)
+end
+
 local function DecorateRow(row)
     if not LfgService:IsEnabled() then
         if row.AikoInviteButton then row.AikoInviteButton:Hide() end
@@ -507,32 +593,64 @@ local function DecorateRow(row)
 
     -- 1. Compact Action Button (positioned directly to the right of roles)
     if not row.AikoInviteButton then
-        local btn = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+        local btn = CreateFrame("Button", nil, row, "BackdropTemplate")
         btn:SetSize(22, 22)
-        btn:SetPoint("RIGHT", row, "RIGHT", -12, 0)
+        btn:SetPoint("RIGHT", row, "RIGHT", -15, 0)
         btn:SetFrameLevel(row:GetFrameLevel() + 2)
 
-        local icon = btn:CreateTexture(nil, "ARTWORK")
-        icon:SetSize(14, 14)
-        icon:SetPoint("CENTER", 0, 0)
-        btn.Icon = icon
-
         btn:SetScript("OnEnter", function(selfBtn)
+            selfBtn:SetBackdropBorderColor(CHIP_BORDER_HOVER.r, CHIP_BORDER_HOVER.g, CHIP_BORDER_HOVER.b, CHIP_BORDER_HOVER.a)
+            selfBtn:SetBackdropColor(CHIP_BG_HOVER.r, CHIP_BG_HOVER.g, CHIP_BG_HOVER.b, CHIP_BG_HOVER.a)
+            UpdateChipGlyphColor(selfBtn, 1.0, 0.95, 0.40, 1.0)
             if selfBtn.tooltipText then
                 GameTooltip:SetOwner(selfBtn, "ANCHOR_RIGHT")
                 GameTooltip:SetText(selfBtn.tooltipText)
                 GameTooltip:Show()
             end
         end)
-        btn:SetScript("OnLeave", GameTooltip_Hide)
+        btn:SetScript("OnLeave", function(selfBtn)
+            selfBtn:SetBackdropBorderColor(CHIP_BORDER_NORMAL.r, CHIP_BORDER_NORMAL.g, CHIP_BORDER_NORMAL.b, CHIP_BORDER_NORMAL.a)
+            selfBtn:SetBackdropColor(CHIP_BG_NORMAL.r, CHIP_BG_NORMAL.g, CHIP_BG_NORMAL.b, CHIP_BG_NORMAL.a)
+            UpdateChipGlyphColor(selfBtn, 1.0, 0.82, 0.20, 1.0)
+            GameTooltip:Hide()
+        end)
+        btn:SetScript("OnMouseDown", function(selfBtn)
+            if selfBtn:IsEnabled() then
+                if selfBtn.PlusIcon and selfBtn.PlusIcon:IsShown() then
+                    selfBtn.PlusIcon:SetPoint("CENTER", 0, -1)
+                end
+                if selfBtn.PlusH and selfBtn.PlusH:IsShown() then
+                    selfBtn.PlusH:SetPoint("CENTER", 0, -1)
+                    selfBtn.PlusV:SetPoint("CENTER", 0, -1)
+                end
+                if selfBtn.Chevron and selfBtn.Chevron:IsShown() then
+                    selfBtn.Chevron:SetPoint("CENTER", 0.5, -1)
+                end
+                if selfBtn.ChevronText and selfBtn.ChevronText:IsShown() then
+                    selfBtn.ChevronText:SetPoint("CENTER", 0.5, -1)
+                end
+            end
+        end)
+        btn:SetScript("OnMouseUp", function(selfBtn)
+            if selfBtn.PlusIcon and selfBtn.PlusIcon:IsShown() then
+                selfBtn.PlusIcon:SetPoint("CENTER", 0, 0)
+            end
+            if selfBtn.PlusH and selfBtn.PlusH:IsShown() then
+                selfBtn.PlusH:SetPoint("CENTER", 0, 0)
+                selfBtn.PlusV:SetPoint("CENTER", 0, 0)
+            end
+            if selfBtn.Chevron and selfBtn.Chevron:IsShown() then
+                selfBtn.Chevron:SetPoint("CENTER", 0.5, 0)
+            end
+            if selfBtn.ChevronText and selfBtn.ChevronText:IsShown() then
+                selfBtn.ChevronText:SetPoint("CENTER", 0.5, 0)
+            end
+        end)
         row.AikoInviteButton = btn
     end
 
     local btn = row.AikoInviteButton
-    if btn.Icon then btn.Icon:Hide() end
-    btn:SetText("+")
-    btn:SetNormalFontObject(GameFontNormalLarge)
-    btn:SetHighlightFontObject(GameFontHighlightLarge)
+    SetupDfChipButton(btn, solo)
 
     if solo then
         btn.tooltipText = L["LFG_BTN_INVITE"] or INVITE or "Invite"

@@ -89,24 +89,30 @@ function SettingsPanel:BuildSubPanel(moduleKey, descriptor)
     return panel
 end
 
-function SettingsPanel:RegisterLegacy(root, children)
+function SettingsPanel:RegisterLegacy(root, children, orderedKeys)
     InterfaceOptions_AddCategory(root)
-    for _, panel in pairs(children) do
-        panel.parent = root.name
-        InterfaceOptions_AddCategory(panel)
+    for _, key in ipairs(orderedKeys or {}) do
+        local panel = children[key]
+        if panel then
+            panel.parent = root.name
+            InterfaceOptions_AddCategory(panel)
+        end
     end
 end
 
-function SettingsPanel:RegisterModern(root, children)
+function SettingsPanel:RegisterModern(root, children, orderedKeys)
     local rootCategory = Settings.RegisterCanvasLayoutCategory(root, root.name, root.name)
     Settings.RegisterAddOnCategory(rootCategory)
     self.rootCategory = rootCategory
 
     self.categories = {}
-    for key, panel in pairs(children) do
-        local category = Settings.RegisterCanvasLayoutSubcategory(rootCategory, panel, panel.name, panel.name)
-        Settings.RegisterAddOnCategory(category)
-        self.categories[key] = category
+    for _, key in ipairs(orderedKeys or {}) do
+        local panel = children[key]
+        if panel then
+            local category = Settings.RegisterCanvasLayoutSubcategory(rootCategory, panel, panel.name, panel.name)
+            Settings.RegisterAddOnCategory(category)
+            self.categories[key] = category
+        end
     end
 end
 
@@ -159,10 +165,20 @@ function SettingsPanel:Register()
     self.rootPanel = root
     self.panels = panels
 
+    local orderedKeys = {}
+    if Descriptors.lfg and (select(4, GetBuildInfo()) == 16001 or ns.IsDev) then
+        table.insert(orderedKeys, "lfg")
+    end
+    table.insert(orderedKeys, "nameplates")
+    table.insert(orderedKeys, "tooltip")
+    table.insert(orderedKeys, "chat")
+    table.insert(orderedKeys, "audio")
+    table.insert(orderedKeys, "scale")
+
     if Settings and Settings.RegisterCanvasLayoutCategory and Settings.RegisterCanvasLayoutSubcategory and Settings.RegisterAddOnCategory then
-        self:RegisterModern(root, panels)
+        self:RegisterModern(root, panels, orderedKeys)
     elseif InterfaceOptions_AddCategory then
-        self:RegisterLegacy(root, panels)
+        self:RegisterLegacy(root, panels, orderedKeys)
     end
 
     self.isRegistered = true

@@ -1,5 +1,11 @@
 local addonName, ns = ...
 
+-- Gate strictly to WoW Forever (TOC 16001). Leave all other clients untouched.
+local _, _, _, tocversion = GetBuildInfo()
+if tocversion ~= 16001 and not ns.IsDev then
+    return
+end
+
 local L = ns.L or {}
 local UI = ns.UI or {}
 ns.UI = UI
@@ -344,54 +350,40 @@ function LfgFilterPanel:Create(service)
     end)
 
     -- -----------------------------------------------------------------------
-    -- 2. ROLES (Square Nodes with Role-colored Borders)
+    -- 2. ROLES (Clean Round Medallions, Active Color / Inactive Grayscale)
     -- -----------------------------------------------------------------------
     local roleHeader = inset:CreateFontString(nil, "ARTWORK", "GameFontNormalMed2")
     if not roleHeader:GetFont() then roleHeader:SetFontObject("GameFontNormal") end
     roleHeader:SetPoint("TOPLEFT", inset, "TOPLEFT", PAD_X, -70)
     roleHeader:SetText(L["LFG_ROLES"] or ROLE or "Roles")
 
-    local NODE_SIZE = 34
+    local NODE_SIZE = 41
     local NODE_GAP = 8
 
     for i, role in ipairs(ROLES) do
-        local btn = CreateFrame("Button", nil, inset, "BackdropTemplate")
+        local btn = CreateFrame("Button", nil, inset)
         btn:SetSize(NODE_SIZE, NODE_SIZE)
         btn:SetPoint("TOPLEFT", inset, "TOPLEFT", PAD_X + (i - 1) * (NODE_SIZE + NODE_GAP), -92)
-        btn:SetBackdrop({
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Buttons\\WHITE8X8",
-            edgeSize = 1.5,
-            insets = { left = 1, right = 1, top = 1, bottom = 1 }
-        })
 
-        -- Role Icon
+        -- Authentic round Blizzard role medallion
         local tex = btn:CreateTexture(nil, "ARTWORK")
-        tex:SetPoint("TOPLEFT", 1.5, -1.5)
-        tex:SetPoint("BOTTOMRIGHT", -1.5, 1.5)
+        tex:SetAllPoints()
         if not tex:SetAtlas(ROLE_ATLASES[role]) then
             tex:SetAtlas(ROLE_MICRO_ATLASES[role])
         end
         btn.Texture = tex
 
-        -- Subtle hover highlight
+        -- Subtle, soft hover glow
         local hl = btn:CreateTexture(nil, "HIGHLIGHT")
         hl:SetAllPoints()
-        hl:SetColorTexture(1, 1, 1, 0.15)
-
-        local color = ROLE_COLORS[role] or { r = 1, g = 0.82, b = 0 }
+        hl:SetTexture("Interface\\Buttons\\UI-Common-MouseHilight")
+        hl:SetBlendMode("ADD")
+        hl:SetAlpha(0.3)
 
         local function UpdateVisual()
             local active = service.state.roles[role]
             tex:SetDesaturated(not active)
-            tex:SetAlpha(active and 1.0 or 0.35)
-            if active then
-                btn:SetBackdropColor(0.12, 0.12, 0.12, 0.8)
-                btn:SetBackdropBorderColor(color.r, color.g, color.b, 1)
-            else
-                btn:SetBackdropColor(0.08, 0.08, 0.08, 0.5)
-                btn:SetBackdropBorderColor(0.28, 0.28, 0.28, 0.5)
-            end
+            tex:SetAlpha(active and 1.0 or 0.25)
         end
         UpdateVisual()
 
@@ -407,11 +399,11 @@ function LfgFilterPanel:Create(service)
     end
 
     -- -----------------------------------------------------------------------
-    -- 3. CLASSES (Square Classic Icons in 2 Centered Rows)
+    -- 3. CLASSES (Clean Square Icons with 1px Shadow Edge, Active Color / Inactive Grayscale)
     -- -----------------------------------------------------------------------
     local classHeader = inset:CreateFontString(nil, "ARTWORK", "GameFontNormalMed2")
     if not classHeader:GetFont() then classHeader:SetFontObject("GameFontNormal") end
-    classHeader:SetPoint("TOPLEFT", inset, "TOPLEFT", PAD_X, -138)
+    classHeader:SetPoint("TOPLEFT", inset, "TOPLEFT", PAD_X, -149)
     classHeader:SetText(L["LFG_CLASSES"] or CLASS or "Classes")
 
     local function CreateClassNode(cName, x, y)
@@ -419,41 +411,44 @@ function LfgFilterPanel:Create(service)
         btn:SetSize(NODE_SIZE, NODE_SIZE)
         btn:SetPoint("TOPLEFT", inset, "TOPLEFT", x, y)
         btn:SetBackdrop({
-            bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Buttons\\WHITE8X8",
-            edgeSize = 1.5,
-            insets = { left = 1, right = 1, top = 1, bottom = 1 }
+            edgeSize = 1,
         })
+        btn:SetBackdropBorderColor(0, 0, 0, 0.85)
 
-        -- Crisp square class icon (cropped 6% to fit flush inside border)
+        -- Recessed dark slot
+        local bg = btn:CreateTexture(nil, "BACKGROUND")
+        bg:SetPoint("TOPLEFT", 1, -1)
+        bg:SetPoint("BOTTOMRIGHT", -1, 1)
+        bg:SetColorTexture(0.05, 0.05, 0.05, 0.8)
+
+        -- Crisp square class icon (cropped 9% to remove border dots and edge artifacts)
         local tex = btn:CreateTexture(nil, "ARTWORK")
-        tex:SetPoint("TOPLEFT", 1.5, -1.5)
-        tex:SetPoint("BOTTOMRIGHT", -1.5, 1.5)
+        tex:SetPoint("TOPLEFT", 1, -1)
+        tex:SetPoint("BOTTOMRIGHT", -1, 1)
         local coords = CLASS_COORDS[cName]
         if coords then
             tex:SetTexture("Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES")
             local left, right, top, bottom = unpack(coords)
-            local xZoom = (right - left) * 0.06
-            local yZoom = (bottom - top) * 0.06
+            local xZoom = (right - left) * 0.09
+            local yZoom = (bottom - top) * 0.09
             tex:SetTexCoord(left + xZoom, right - xZoom, top + yZoom, bottom - yZoom)
         else
             tex:SetAtlas("groupfinder-icon-class-" .. string.lower(cName))
         end
         btn.Texture = tex
 
-        local classColor = RAID_CLASS_COLORS and RAID_CLASS_COLORS[cName] or NORMAL_FONT_COLOR
+        -- Hover highlight
+        local hl = btn:CreateTexture(nil, "HIGHLIGHT")
+        hl:SetPoint("TOPLEFT", 1, -1)
+        hl:SetPoint("BOTTOMRIGHT", -1, 1)
+        hl:SetTexture("Interface\\Buttons\\ButtonHilight-Square")
+        hl:SetBlendMode("ADD")
 
         local function UpdateVisual()
             local active = service.state.classes[cName] ~= false
             tex:SetDesaturated(not active)
-            tex:SetAlpha(active and 1.0 or 0.35)
-            if active then
-                btn:SetBackdropColor(0.12, 0.12, 0.12, 0.8)
-                btn:SetBackdropBorderColor(classColor.r, classColor.g, classColor.b, 1)
-            else
-                btn:SetBackdropColor(0.08, 0.08, 0.08, 0.5)
-                btn:SetBackdropBorderColor(0.28, 0.28, 0.28, 0.5)
-            end
+            tex:SetAlpha(active and 1.0 or 0.25)
         end
         UpdateVisual()
 
@@ -469,7 +464,7 @@ function LfgFilterPanel:Create(service)
     end
 
     -- Row 1: 5 classes (Warrior, Paladin, Hunter, Rogue, Priest)
-    local classStartY = -160
+    local classStartY = -173
     for i = 1, 5 do
         CreateClassNode(CLASSES[i], PAD_X + (i - 1) * (NODE_SIZE + NODE_GAP), classStartY)
     end
@@ -490,11 +485,13 @@ function LfgFilterPanel:Create(service)
 
     local function CreateSortCheckbox(labelText, getVal, setVal, offsetY)
         local cb = CreateFrame("CheckButton", nil, inset, "UICheckButtonTemplate")
-        cb:SetSize(22, 22)
-        cb:SetPoint("TOPLEFT", sortHeader, "BOTTOMLEFT", 0, offsetY)
+        cb:SetSize(28, 28)
+        cb:SetPoint("TOPLEFT", sortHeader, "BOTTOMLEFT", -2, offsetY)
         cb.Text:SetText(labelText)
         cb.Text:SetFontObject("GameFontHighlight")
         cb:SetChecked(getVal())
+        local textWidth = cb.Text:GetStringWidth()
+        cb:SetHitRectInsets(0, -((textWidth and textWidth > 0) and textWidth or 140) - 10, 0, 0)
         cb:SetScript("OnClick", function(selfBtn)
             setVal(selfBtn:GetChecked())
             service:ApplyFilters(LFGBrowseFrame)
@@ -512,14 +509,14 @@ function LfgFilterPanel:Create(service)
     local cbFriends = CreateSortCheckbox(L["LFG_SORT_FRIENDS"] or "Friends & Guild",
         function() return service.state.sortFriends end,
         function(val) service.state.sortFriends = val end,
-        -34
+        -40
     )
     self.checkboxes.friends = cbFriends
 
     local cbLevel = CreateSortCheckbox(L["LFG_SORT_LEVEL"] or "Highest Level",
         function() return service.state.sortLevel end,
         function(val) service.state.sortLevel = val end,
-        -60
+        -72
     )
     self.checkboxes.level = cbLevel
 

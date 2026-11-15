@@ -5,7 +5,7 @@ local L = ns.L
 ns.UI.SettingsDescriptors = {
     nameplates = {
         moduleKey = "nameplates",
-        title = L["TAB_FRIENDLY_NAMEPLATES"],
+        title = L["TAB_NAMEPLATES"] or "Nameplates",
         description = L["DESC_NAMEPLATES"],
         controls = {
             { type = "checkbox", path = "modules.nameplates.enabled", label = L["MODULE_ENABLED"] },
@@ -68,8 +68,8 @@ ns.UI.SettingsDescriptors = {
         title = L["TAB_LFG"] or "Group Finder",
         description = L["DESC_LFG"] or "LFG Enhancements",
         controls = {
-            { type = "checkbox", path = "modules.lfg.enabled", label = L["LFG_ENABLED"] or L["MODULE_ENABLED"] },
-            { type = "checkbox", path = "modules.lfg.autoWhisper", label = L["LFG_AUTO_WHISPER"] or "Automate Whispers" },
+            { type = "checkbox", path = "modules.lfg.enabled", label = L["MODULE_ENABLED"] },
+            { type = "checkbox", path = "modules.lfg.autoWhisper", label = L["LFG_AUTO_WHISPER"] or "Auto-whisper to party leader" },
         },
     },
 }
