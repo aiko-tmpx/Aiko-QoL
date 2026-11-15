@@ -10,21 +10,11 @@ local LfgService = {}
 ns.Core.LfgService = LfgService
 local L = ns.L
 
-local ROLES = {"TANK", "HEALER", "DAMAGER"}
+local ROLES = (ns.LfgData and ns.LfgData.ROLES) or {"TANK", "HEALER", "DAMAGER"}
+local CLASSES = (ns.LfgData and ns.LfgData.CLASSES) or {"WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID"}
+local ROLE_ATLASES = (ns.LfgData and ns.LfgData.ROLE_ATLASES) or {}
+local ROLE_MICRO_ATLASES = (ns.LfgData and ns.LfgData.ROLE_MICRO_ATLASES) or {}
 local LFG_ROLE_KEYS = {["TANK"] = "tank", ["HEALER"] = "healer", ["DAMAGER"] = "dps"}
-
-local ROLE_ATLASES = {
-    ["TANK"] = "groupfinder-icon-role-large-tank",
-    ["HEALER"] = "groupfinder-icon-role-large-heal",
-    ["DAMAGER"] = "groupfinder-icon-role-large-dps"
-}
-local ROLE_MICRO_ATLASES = {
-    ["TANK"] = "groupfinder-icon-role-micro-tank",
-    ["HEALER"] = "groupfinder-icon-role-micro-heal",
-    ["DAMAGER"] = "groupfinder-icon-role-micro-dps"
-}
-
-local CLASSES = {"WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID"}
 
 local ALL_LANG_CODES = {
     "ruRU", "enUS", "deDE", "frFR", "esES", "itIT", "ptBR", "zhCN", "zhTW", "koKR"
@@ -52,36 +42,8 @@ local LANG_LOCALE_KEYS = {
     ["koKR"] = "LFG_LANG_KO"
 }
 
--- Instance MapID -> World Area IDs (dungeon entrance zones)
-local INSTANCE_ZONE_AREAS = {
-    [389] = {1637},       -- Ragefire Chasm (Orgrimmar)
-    [36] = {40},          -- Deadmines (Westfall)
-    [43] = {17},          -- Wailing Caverns (Barrens)
-    [33] = {130},         -- Shadowfang Keep (Silverpine Forest)
-    [34] = {1519},        -- Stormwind Stockade (Stormwind)
-    [48] = {331},         -- Blackfathom Deeps (Ashenvale)
-    [90] = {1},           -- Gnomeregan (Dun Morogh)
-    [47] = {17},          -- Razorfen Kraul (Barrens)
-    [189] = {85},         -- Scarlet Monastery (Tirisfal Glades)
-    [129] = {17, 400},    -- Razorfen Downs (Barrens, Thousand Needles)
-    [70] = {3},           -- Uldaman (Badlands)
-    [209] = {440},        -- Zul'Farrak (Tanaris)
-    [349] = {405},        -- Maraudon (Desolace)
-    [109] = {8},          -- Sunken Temple (Swamp of Sorrows)
-    [230] = {25, 51, 46}, -- Blackrock Depths (Searing Gorge, Burning Steppes)
-    [229] = {25, 51, 46}, -- Lower Blackrock Spire
-    [409] = {25, 51, 46}, -- Upper Blackrock Spire
-    [469] = {25, 51, 46}, -- Blackwing Lair
-    [429] = {357},        -- Dire Maul (Feralas)
-    [289] = {28},         -- Scholomance (Western Plaguelands)
-    [329] = {139},        -- Stratholme (Eastern Plaguelands)
-    [309] = {33},         -- Zul'Gurub (Stranglethorn Vale)
-    [509] = {1377},       -- Ruins of Ahn'Qiraj (Silithus)
-    [531] = {1377},       -- Temple of Ahn'Qiraj (Silithus)
-    [249] = {15},         -- Onyxia's Lair (Dustwallow Marsh)
-    [533] = {139},        -- Naxxramas (Eastern Plaguelands)
-    [572] = {1497, 85}    -- Karazhan (Deadwind Pass)
-}
+-- Instance MapID -> World Area IDs (dungeon entrance zones) decoupled into Core/LfgData.lua
+local INSTANCE_ZONE_AREAS = (ns.LfgData and ns.LfgData.INSTANCE_ZONE_AREAS) or {}
 
 local instanceZoneNamesCache = {}
 local function GetInstanceZoneNames(mapID)
@@ -824,13 +786,7 @@ function LfgService:HookLFG()
 
     -- 3. Visibility sync with LFGParentFrame & LFGBrowseFrame
     local function SyncPanelVisibility()
-        local lfgShown = LFGParentFrame:IsShown() and (not LFGBrowseFrame or LFGBrowseFrame:IsShown())
-        if LfgService.sidePanel then
-            LfgService.sidePanel:SetShown(lfgShown and LfgService:IsEnabled() and LfgService.state.panelShown)
-        end
-        if LfgService.toggleButton then
-            LfgService.toggleButton:SetShown(lfgShown and LfgService:IsEnabled())
-        end
+        LfgService:UpdateState()
     end
 
     LFGParentFrame:HookScript("OnShow", SyncPanelVisibility)
@@ -847,17 +803,46 @@ function LfgService:HookLFG()
     end
 end
 
+function LfgService:UpdateState()
+    if not self.hooked then return end
+    local enabled = self:IsEnabled()
+    local lfgShown = LFGParentFrame and LFGParentFrame:IsShown() and (not LFGBrowseFrame or LFGBrowseFrame:IsShown())
+    if self.sidePanel then
+        self.sidePanel:SetShown(lfgShown and enabled and self.state.panelShown)
+    end
+    if self.toggleButton then
+        self.toggleButton:SetShown(lfgShown and enabled)
+    end
+    if LFGBrowseFrame and LFGBrowseFrame:IsShown() and LFGBrowseFrame.ScrollBox and LFGBrowseFrame.ScrollBox.ForEachFrame then
+        LFGBrowseFrame.ScrollBox:ForEachFrame(function(row)
+            if row.AikoInviteButton then
+                row.AikoInviteButton:SetShown(enabled and not not row.resultID)
+            end
+            if row.AikoZoneText then
+                row.AikoZoneText:SetShown(enabled and not not row.resultID)
+            end
+        end)
+    end
+end
+
 function LfgService:Init()
+    if self.initialized then return end
+    self.initialized = true
+
+    if LFGBrowseFrame and LFGParentFrame then
+        self:HookLFG()
+        return
+    end
+
     local loader = CreateFrame("Frame")
     loader:RegisterEvent("PLAYER_LOGIN")
     loader:RegisterEvent("ADDON_LOADED")
-    loader:SetScript("OnEvent", function(_, event, arg1)
+    loader:SetScript("OnEvent", function(frame, event, arg1)
         if event == "PLAYER_LOGIN" or arg1 == "Blizzard_GroupFinder_VanillaStyle" or arg1 == addonName then
             if LFGBrowseFrame and LFGParentFrame then
                 LfgService:HookLFG()
+                frame:UnregisterAllEvents()
             end
         end
     end)
 end
-
-LfgService:Init()

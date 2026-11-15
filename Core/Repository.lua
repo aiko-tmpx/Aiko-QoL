@@ -21,6 +21,10 @@ local function EnsureModuleTables(profile, defaults)
     TableUtils:EnsureTable(profile.modules, "tooltip", defaults.profile.modules.tooltip)
     TableUtils:EnsureTable(profile.modules, "chat", defaults.profile.modules.chat)
     TableUtils:EnsureTable(profile.modules, "scale", defaults.profile.modules.scale)
+    TableUtils:EnsureTable(profile.modules, "lfg", defaults.profile.modules.lfg)
+    if profile.modules.lfg and profile.modules.lfg.autoWhisper == nil and defaults.profile.modules.lfg then
+        profile.modules.lfg.autoWhisper = defaults.profile.modules.lfg.autoWhisper
+    end
 end
 
 local function EnsureAudioTables(profile, defaults)

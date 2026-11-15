@@ -21,6 +21,9 @@ function App:Update(isInitialLogin)
     if ns.Core.ScaleService and ns.Core.ScaleService.Apply then
         ns.Core.ScaleService:Apply()
     end
+    if ns.Core.LfgService and ns.Core.LfgService.UpdateState then
+        ns.Core.LfgService:UpdateState()
+    end
 
     if isInitialLogin then
         return
@@ -70,6 +73,9 @@ function App:Init()
     end
     if ns.Core.ScaleService and ns.Core.ScaleService.Init then
         ns.Core.ScaleService:Init()
+    end
+    if ns.Core.LfgService and ns.Core.LfgService.Init then
+        ns.Core.LfgService:Init()
     end
     self:InitEvents()
     self.initialized = true

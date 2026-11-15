@@ -13,24 +13,16 @@ ns.UI = UI
 local LfgFilterPanel = {}
 UI.LfgFilterPanel = LfgFilterPanel
 
-local ROLES = {"TANK", "HEALER", "DAMAGER"}
-local ROLE_ATLASES = {
-    ["TANK"] = "groupfinder-icon-role-large-tank",
-    ["HEALER"] = "groupfinder-icon-role-large-heal",
-    ["DAMAGER"] = "groupfinder-icon-role-large-dps"
-}
-local ROLE_MICRO_ATLASES = {
-    ["TANK"] = "groupfinder-icon-role-micro-tank",
-    ["HEALER"] = "groupfinder-icon-role-micro-heal",
-    ["DAMAGER"] = "groupfinder-icon-role-micro-dps"
-}
+local ROLES = (ns.LfgData and ns.LfgData.ROLES) or {"TANK", "HEALER", "DAMAGER"}
+local CLASSES = (ns.LfgData and ns.LfgData.CLASSES) or {"WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID"}
+local ROLE_ATLASES = (ns.LfgData and ns.LfgData.ROLE_ATLASES) or {}
+local ROLE_MICRO_ATLASES = (ns.LfgData and ns.LfgData.ROLE_MICRO_ATLASES) or {}
+
 local ROLE_COLORS = {
     ["TANK"] = { r = 0.25, g = 0.65, b = 1.0 },   -- Blizzard Blue
     ["HEALER"] = { r = 0.25, g = 0.85, b = 0.35 }, -- Blizzard Green
     ["DAMAGER"] = { r = 1.0, g = 0.30, b = 0.25 }  -- Blizzard Red
 }
-
-local CLASSES = {"WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID"}
 
 local CLASS_COORDS = CLASS_ICON_TCOORDS or {
     ["WARRIOR"] = {0, 0.25, 0, 0.25},
