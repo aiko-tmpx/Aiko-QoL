@@ -2,7 +2,7 @@
 ## Title: Aiko QoL
 ## Notes: QoL utilities (friendly nameplates, audio, tooltips, chat, UI scale, group finder).
 ## Author: Zagamant, Aiko
-## Version: 1.9.9
+## Version: 1.9.10
 ## X-Curse-Project-ID: 1515225
 ## X-Website: https://github.com/aiko-tmpx/Aiko-QoL
 ## SavedVariables: AikoQoL_DB
