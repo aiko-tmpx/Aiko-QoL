@@ -16,25 +16,13 @@ local ROLE_ATLASES = (ns.LfgData and ns.LfgData.ROLE_ATLASES) or {}
 local ROLE_MICRO_ATLASES = (ns.LfgData and ns.LfgData.ROLE_MICRO_ATLASES) or {}
 local LFG_ROLE_KEYS = {["TANK"] = "tank", ["HEALER"] = "healer", ["DAMAGER"] = "dps"}
 
-local ALL_LANG_CODES = {
-    "ruRU", "enUS", "deDE", "frFR", "esES", "itIT", "ptBR", "zhCN", "zhTW", "koKR"
-}
-
-local REGION_LANGUAGES = {
-    [1] = { "enUS", "esMX", "ptBR" },                         -- US / Americas
-    [2] = { "koKR" },                                         -- Korea
-    [3] = { "enUS", "deDE", "frFR", "esES", "itIT", "ruRU" }, -- Europe
-    [4] = { "zhTW" },                                         -- Taiwan
-    [5] = { "zhCN" },                                         -- China
-}
-
 local LANG_LOCALE_KEYS = {
     ["ruRU"] = "LFG_LANG_RU",
     ["enUS"] = "LFG_LANG_EN",
     ["deDE"] = "LFG_LANG_DE",
     ["frFR"] = "LFG_LANG_FR",
     ["esES"] = "LFG_LANG_ES",
-    ["esMX"] = "LFG_LANG_ES",
+    ["esMX"] = "LFG_LANG_ESMX",
     ["itIT"] = "LFG_LANG_IT",
     ["ptBR"] = "LFG_LANG_PT",
     ["zhCN"] = "LFG_LANG_ZHCN",
@@ -259,9 +247,6 @@ LfgService.state = {
 for _, c in ipairs(CLASSES) do
     LfgService.state.classes[c] = true
 end
-for _, code in ipairs(ALL_LANG_CODES) do
-    LfgService.state.languages[code] = true
-end
 
 function LfgService:IsEnabled()
     local profile = ns.Core.Repository and ns.Core.Repository:GetProfile()
@@ -274,40 +259,38 @@ function LfgService:GetClientLocale()
     return locale
 end
 
-function LfgService:GetAvailableLanguages()
-    if self.availableLanguages and #self.availableLanguages > 0 then
-        return self.availableLanguages
-    end
-
-    local apiLangs = C_LFGList and C_LFGList.GetAvailableLanguageSearchFilter and C_LFGList.GetAvailableLanguageSearchFilter()
-    local isDynamic = type(apiLangs) == "table" and #apiLangs > 0
-    local sourceList = isDynamic and apiLangs
-    if not sourceList then
-        local region = GetCurrentRegion and GetCurrentRegion() or 3
-        sourceList = REGION_LANGUAGES[region] or REGION_LANGUAGES[3]
-    end
-
-    local langs = {}
+function LfgService:GetLanguageOptions()
+    local offered = C_LFGList.GetAvailableLanguageSearchFilter and C_LFGList.GetAvailableLanguageSearchFilter()
+    local defaults = C_LFGList.GetDefaultLanguageSearchFilter and C_LFGList.GetDefaultLanguageSearchFilter()
+    local available = {}
     local seen = {}
-    local clientLocale = self:GetClientLocale()
-
-    for _, code in ipairs(sourceList) do
-        if type(code) == "string" and not seen[code] then
-            langs[#langs + 1] = code
-            seen[code] = true
+    if type(offered) == "table" then
+        for _, code in ipairs(offered) do
+            if type(code) == "string" and not seen[code] then
+                available[#available + 1] = code
+                seen[code] = true
+            end
         end
     end
 
-    if clientLocale and not seen[clientLocale] then
-        table.insert(langs, 1, clientLocale)
-        seen[clientLocale] = true
+    local locked = {}
+    if type(defaults) == "table" then
+        for code, enabled in pairs(defaults) do
+            if enabled == true then
+                locked[code] = true
+            end
+        end
+    end
+    if not next(locked) then
+        locked[self:GetClientLocale()] = true
+    end
+    for code in pairs(locked) do
+        if not seen[code] then
+            available[#available + 1] = code
+        end
     end
 
-    if isDynamic then
-        self.availableLanguages = langs
-    end
-
-    return langs
+    return available, locked
 end
 
 function LfgService:GetLanguageDisplayName(code)
@@ -467,85 +450,81 @@ function LfgService:ApplyFilters(frame)
 end
 
 -- =========================================================================
--- SEARCH TRIGGER (Multi-language handling matching LfgUtils)
+-- SEARCH TRIGGER
 -- =========================================================================
 function LfgService:BuildLanguageFilter()
-    local available = self:GetAvailableLanguages()
-    if self.state.langMode == "ALL" then
-        local filter = {}
-        for _, code in ipairs(available) do
-            filter[code] = true
-        end
-        return filter
-    end
-
-    local filter = {}
-    local any = false
-    local clientLocale = self:GetClientLocale()
+    local available, filter = self:GetLanguageOptions()
+    local hasAdditionalLanguage = false
     for _, code in ipairs(available) do
-        if code == clientLocale or self.state.languages[code] then
+        if not filter[code] and (self.state.langMode == "ALL" or self.state.languages[code]) then
             filter[code] = true
-            any = true
+            hasAdditionalLanguage = true
         end
     end
-    if not any then
-        filter[clientLocale] = true
-    end
-    return filter
-end
-
-local function IsActivityInLevelRange(activityID, playerLevel)
-    local info = C_LFGList.GetActivityInfoTable(activityID)
-    if not info then return true end
-    if (info.minLevelSuggestion or 0) > 0 and info.minLevelSuggestion > playerLevel then return false end
-    if (info.maxLevelSuggestion or 0) > 0 and info.maxLevelSuggestion < playerLevel then return false end
-    return true
-end
-
-function LfgService:GetActivities(categoryID)
-    local activities = {}
-    local dropdown = LFGBrowseFrame and LFGBrowseFrame.ActivityDropdown
-    for _, activityID in ipairs(dropdown and dropdown.selectedValues or {}) do
-        activities[#activities + 1] = activityID
-    end
-    if #activities > 0 then return activities end
-
-    local ignoreLevel = C_CVar and C_CVar.GetCVarBool and C_CVar.GetCVarBool("disableSuggestedLevelActivityFilter")
-    local listed = {}
-    local entry = C_LFGList.GetActiveEntryInfo()
-    for _, activityID in ipairs(entry and entry.activityIDs or {}) do
-        listed[activityID] = true
-    end
-
-    local playerLevel = UnitLevel("player")
-    for _, activityID in ipairs(C_LFGList.GetAvailableActivities(categoryID) or {}) do
-        if ignoreLevel or listed[activityID] or IsActivityInLevelRange(activityID, playerLevel) then
-            activities[#activities + 1] = activityID
-        end
-    end
-    return activities
+    return hasAdditionalLanguage and filter or nil
 end
 
 function LfgService:DoSearch()
     if not self:IsEnabled() then return end
     if InCombatLockdown and InCombatLockdown() then return end
-    if not LFGBrowseFrame or not LFGBrowseFrame:IsVisible() then return end
-    local categoryDropdown = LFGBrowseFrame.CategoryDropdown
-    if not categoryDropdown then return end
-    local categoryID = 0
-    if categoryDropdown.GetValue then
-        local ok, val = pcall(categoryDropdown.GetValue, categoryDropdown)
-        if ok and type(val) == "number" then categoryID = val end
+    local frame = LFGBrowseFrame
+    local categoryID = frame and frame.CategoryDropdown and frame.CategoryDropdown:GetValue()
+    if type(categoryID) ~= "number" or categoryID <= 0 then return end
+    if frame.searching then
+        self.searchPending = true
+        return
     end
-    if categoryID <= 0 and categoryDropdown.selectedValue then
-        categoryID = categoryDropdown.selectedValue or 0
-    end
-    if categoryID <= 0 then return end
 
-    local activities = self:GetActivities(categoryID)
+    self.searchPending = nil
+    local activities = frame.ActivityDropdown.selectedValues
+    if #activities == 0 then
+        activities = LFGUtil_GetFilteredActivities(categoryID)
+    end
     local langFilter = self:BuildLanguageFilter()
 
-    pcall(C_LFGList.Search, categoryID, 0, 0, langFilter, false, nil, activities)
+    self.submittingSearch = true
+    self.searchBlocked = false
+    frame.searching = true
+    frame.searchFailed = false
+    local ok, err = pcall(C_LFGList.Search, categoryID, 0, 0, langFilter, false, nil, activities)
+    self.submittingSearch = false
+
+    if not ok or self.searchBlocked then
+        frame.searching = false
+        frame.searchFailed = true
+        frame:UpdateResults()
+        if not ok then geterrorhandler()(err) end
+    elseif frame.searching then
+        frame:UpdateResults()
+    end
+end
+
+function LfgService:HookSearch(frame)
+    -- Category changes and the refresh button both call this Blizzard entry point.
+    local originalSearch = LFGBrowse_DoSearch
+    LFGBrowse_DoSearch = function(...)
+        if not self:IsEnabled() or (InCombatLockdown and InCombatLockdown()) then
+            return originalSearch(...)
+        end
+        self:DoSearch()
+    end
+
+    frame:HookScript("OnEvent", function(browse, event)
+        if (event == "LFG_LIST_SEARCH_RESULTS_RECEIVED" or event == "LFG_LIST_SEARCH_FAILED")
+            and self.searchPending then
+            self.searchPending = nil
+            if browse:IsVisible() then self:DoSearch() end
+        end
+    end)
+
+    local listener = CreateFrame("Frame")
+    listener:RegisterEvent("ADDON_ACTION_BLOCKED")
+    listener:RegisterEvent("ADDON_ACTION_FORBIDDEN")
+    listener:SetScript("OnEvent", function(_, _, _, action)
+        if self.submittingSearch and (action == "C_LFGList.Search" or action == "C_LFGList.Search()") then
+            self.searchBlocked = true
+        end
+    end)
 end
 
 -- =========================================================================
@@ -645,6 +624,7 @@ function LfgService:HookLFG()
 
     self:CreateSidePanel()
     HookDividers(LFGBrowseFrame)
+    self:HookSearch(LFGBrowseFrame)
 
     -- 1. Decorate search rows (Action button + Zone text)
     hooksecurefunc("LFGBrowseSearchEntry_Update", function(row)
