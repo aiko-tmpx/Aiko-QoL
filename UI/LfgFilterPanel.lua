@@ -135,27 +135,24 @@ function LfgFilterPanel:Create(service)
         langBtn:SetBackdropColor(0.12, 0.11, 0.10, 0.85)
     end)
 
-    local function UpdateLangBtnLabel()
-        local available = service:GetAvailableLanguages()
-        if service.state.langMode == "ALL" then
+    local function IsLanguageSelected(code, locked)
+        return locked[code] or service.state.langMode == "ALL" or service.state.languages[code] == true
+    end
+
+    local function UpdateLangBtnLabel(available, locked)
+        if not available then available, locked = service:GetLanguageOptions() end
+        local count, only = 0, nil
+        for _, code in ipairs(available) do
+            if IsLanguageSelected(code, locked) then
+                count, only = count + 1, code
+            end
+        end
+        if count == 1 then
+            langLabel:SetText(service:GetLanguageDisplayName(only))
+        elseif count == #available then
             langLabel:SetText(L["LFG_LANG_ALL"] or "All Languages")
         else
-            local count = 0
-            for _, code in ipairs(available) do
-                if service.state.languages[code] then count = count + 1 end
-            end
-            if count == #available or count == 0 then
-                langLabel:SetText(L["LFG_LANG_ALL"] or "All Languages")
-            elseif count == 1 then
-                for _, code in ipairs(available) do
-                    if service.state.languages[code] then
-                        langLabel:SetText(service:GetLanguageDisplayName(code))
-                        break
-                    end
-                end
-            else
-                langLabel:SetText(string.format("%s (%d)", L["LFG_LANGUAGES"] or "Languages", count))
-            end
+            langLabel:SetText(string.format("%s (%d)", L["LFG_LANGUAGES"] or "Languages", count))
         end
     end
     self.UpdateLangBtnLabel = UpdateLangBtnLabel
@@ -228,11 +225,8 @@ function LfgFilterPanel:Create(service)
         return itemBtn
     end
 
-    local available = service:GetAvailableLanguages()
-    local clientCode = service:GetClientLocale()
-
     local allBtn = CreateMenuItem(langMenu, -8, L["LFG_LANG_ALL"] or "All Languages", true)
-    local clientBtn = CreateMenuItem(langMenu, -30, L["LFG_LANG_CLIENT"] or "Current Client Only", true)
+    local defaultBtn = CreateMenuItem(langMenu, -30, L["LFG_LANG_DEFAULT"] or "Default Languages", true)
 
     local mDiv = langMenu:CreateTexture(nil, "ARTWORK")
     mDiv:SetHeight(1)
@@ -241,98 +235,74 @@ function LfgFilterPanel:Create(service)
     mDiv:SetPoint("TOPRIGHT", langMenu, "TOPRIGHT", -8, -54)
 
     local langCheckButtons = {}
-    local curY = -58
-    for _, code in ipairs(available) do
-        local langText = service:GetLanguageDisplayName(code)
-        local btn = CreateMenuItem(langMenu, curY, langText, false)
-        langCheckButtons[code] = btn
-        curY = curY - 22
-    end
-    langMenu:SetHeight(-curY + 7)
-
-    local function RefreshMenuVisuals()
-        local isAll = (service.state.langMode == "ALL")
-        allBtn.Check:SetShown(isAll)
-
-        local isClientOnly = (service.state.langMode == "CUSTOM")
-        if isClientOnly then
-            for _, code in ipairs(available) do
-                if code == clientCode and not service.state.languages[code] then isClientOnly = false break end
-                if code ~= clientCode and service.state.languages[code] then isClientOnly = false break end
+    local function ToggleLanguage(code, available, locked)
+        if service.state.langMode == "ALL" then
+            service.state.langMode = "CUSTOM"
+            for _, other in ipairs(available) do
+                service.state.languages[other] = not locked[other] and other ~= code or nil
             end
-        end
-        clientBtn.Check:SetShown(isClientOnly)
-
-        for _, code in ipairs(available) do
-            local btn = langCheckButtons[code]
-            if btn then
-                local checked = isAll or (service.state.languages[code] == true)
-                btn.Check:SetShown(checked)
+        else
+            service.state.languages[code] = not service.state.languages[code] or nil
+            for _, other in ipairs(available) do
+                if not IsLanguageSelected(other, locked) then return end
             end
+            service.state.langMode = "ALL"
+            service.state.languages = {}
         end
     end
 
-    allBtn:SetScript("OnClick", function()
-        service.state.langMode = "ALL"
-        for _, code in ipairs(available) do
-            service.state.languages[code] = true
-        end
-        UpdateLangBtnLabel()
-        RefreshMenuVisuals()
-        service:DoSearch()
-    end)
+    local function RefreshLanguageMenu()
+        local available, locked = service:GetLanguageOptions()
+        local hasOptional, selectedOptional = false, false
+        for index, code in ipairs(available) do
+            local btn = langCheckButtons[index]
+            if not btn then
+                btn = CreateMenuItem(langMenu, -58 - (index - 1) * 22, "", false)
+                langCheckButtons[index] = btn
+            end
 
-    clientBtn:SetScript("OnClick", function()
-        service.state.langMode = "CUSTOM"
-        for _, code in ipairs(available) do
-            service.state.languages[code] = (code == clientCode)
-        end
-        UpdateLangBtnLabel()
-        RefreshMenuVisuals()
-        service:DoSearch()
-    end)
-
-    for _, code in ipairs(available) do
-        local btn = langCheckButtons[code]
-        if btn then
+            local selected = IsLanguageSelected(code, locked)
+            btn.Text:SetText(service:GetLanguageDisplayName(code))
+            btn.Text:SetFontObject(locked[code] and "GameFontDisable" or "GameFontHighlight")
+            btn.Check:SetShown(selected)
+            btn:SetEnabled(not locked[code])
+            btn:Show()
             btn:SetScript("OnClick", function()
-                if service.state.langMode == "ALL" then
-                    service.state.langMode = "CUSTOM"
-                    for _, c in ipairs(available) do
-                        service.state.languages[c] = (c ~= code)
-                    end
-                else
-                    service.state.languages[code] = not service.state.languages[code]
-                    local allChecked = true
-                    local anyChecked = false
-                    for _, c in ipairs(available) do
-                        if service.state.languages[c] then
-                            anyChecked = true
-                        else
-                            allChecked = false
-                        end
-                    end
-                    if allChecked then
-                        service.state.langMode = "ALL"
-                        for _, c in ipairs(available) do
-                            service.state.languages[c] = true
-                        end
-                    elseif not anyChecked then
-                        service.state.languages[clientCode] = true
-                    end
-                end
-                UpdateLangBtnLabel()
-                RefreshMenuVisuals()
+                ToggleLanguage(code, available, locked)
+                RefreshLanguageMenu()
                 service:DoSearch()
             end)
+
+            if not locked[code] then
+                hasOptional = true
+                selectedOptional = selectedOptional or selected
+            end
         end
+        for index = #available + 1, #langCheckButtons do
+            langCheckButtons[index]:Hide()
+        end
+        allBtn:SetEnabled(hasOptional)
+        allBtn.Check:SetShown(hasOptional and service.state.langMode == "ALL")
+        defaultBtn.Check:SetShown(not selectedOptional)
+        langMenu:SetHeight(65 + #available * 22)
+        UpdateLangBtnLabel(available, locked)
     end
+
+    local function SelectLanguageMode(mode)
+        service.state.langMode = mode
+        service.state.languages = {}
+        RefreshLanguageMenu()
+        service:DoSearch()
+    end
+
+    allBtn:SetScript("OnClick", function() SelectLanguageMode("ALL") end)
+    defaultBtn:SetScript("OnClick", function() SelectLanguageMode("CUSTOM") end)
 
     langBtn:SetScript("OnClick", function()
         if langMenu:IsShown() then
             langMenu:Hide()
         else
-            RefreshMenuVisuals()
+            RefreshLanguageMenu()
             langMenu:ClearAllPoints()
             langMenu:SetPoint("TOPLEFT", langBtn, "BOTTOMLEFT", 0, -3)
             langMenu:SetPoint("TOPRIGHT", langBtn, "BOTTOMRIGHT", 0, -3)
@@ -530,10 +500,7 @@ function LfgFilterPanel:Create(service)
             if self.classButtons[c] then self.classButtons[c].update() end
         end
         service.state.langMode = "ALL"
-        local available = service:GetAvailableLanguages()
-        for _, code in ipairs(available) do
-            service.state.languages[code] = true
-        end
+        service.state.languages = {}
         UpdateLangBtnLabel()
 
         service.state.sortNear = true
