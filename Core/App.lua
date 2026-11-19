@@ -21,8 +21,8 @@ function App:Update(isInitialLogin)
     if ns.Core.ScaleService and ns.Core.ScaleService.Apply then
         ns.Core.ScaleService:Apply()
     end
-    if ns.Core.LfgService and ns.Core.LfgService.UpdateState then
-        ns.Core.LfgService:UpdateState()
+    if ns.Core.LootService and ns.Core.LootService.Update then
+        ns.Core.LootService:Update()
     end
 
     if isInitialLogin then
@@ -47,6 +47,9 @@ function App:InitEvents()
     frame:SetScript("OnEvent", function(_, event, arg1)
         if event == "ADDON_LOADED" and arg1 == addonName then
             ns.Core.Repository:EnsureDB()
+            if ns.Core.ChatService and ns.Core.ChatService.UpdateState then
+                ns.Core.ChatService:UpdateState()
+            end
             if ns.UI.SettingsPanel then
                 ns.UI.SettingsPanel:Register()
             end
@@ -74,8 +77,8 @@ function App:Init()
     if ns.Core.ScaleService and ns.Core.ScaleService.Init then
         ns.Core.ScaleService:Init()
     end
-    if ns.Core.LfgService and ns.Core.LfgService.Init then
-        ns.Core.LfgService:Init()
+    if ns.Core.LootService and ns.Core.LootService.Init then
+        ns.Core.LootService:Init()
     end
     self:InitEvents()
     self.initialized = true

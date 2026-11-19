@@ -44,6 +44,18 @@ function SettingsPanel:BuildControl(parent, moduleKey, control, y, registry)
         Controls:CreateModuleCheckbox(parent, control.label, control.path, y, registry, moduleKey)
         return y - 30
     end
+    if control.type == "cvarCheckbox" then
+        Controls:CreateCVarCheckbox(parent, control.label, control.cvar, y, registry, moduleKey, control.tooltip, control.inverted, control.extraCVar, control.extraValOn, control.extraValOff)
+        return y - 30
+    end
+    if control.type == "cvarInput" then
+        Controls:CreateCVarInput(parent, control.label, control.cvar, y, registry, moduleKey, control.tooltip, control.min, control.max)
+        return y - 52
+    end
+    if control.type == "sectionHeader" then
+        Controls:CreateHeaderText(parent, control.label, 16, y, registry, moduleKey, "GameFontNormalLarge")
+        return y - 28
+    end
     if control.type == "optimizeButton" then
         Controls:CreateOptimizeButton(parent, control.label, moduleKey, y, registry)
         return y - 34
@@ -51,6 +63,14 @@ function SettingsPanel:BuildControl(parent, moduleKey, control, y, registry)
     if control.type == "input" then
         Controls:CreateInputControl(parent, control.label, control.path, y, registry, moduleKey)
         return y - 48
+    end
+    if control.type == "dropdown" then
+        Controls:CreateDropdownControl(parent, control.label, control.path, control.options, y, registry, moduleKey)
+        return y - 56
+    end
+    if control.type == "lootActionRow" then
+        Controls:CreateLootActionRow(parent, y, registry, moduleKey)
+        return y - 36
     end
     if control.type == "spacer" then
         return y - 8
@@ -75,9 +95,10 @@ function SettingsPanel:BuildSubPanel(moduleKey, descriptor)
     local registry = self:CreateRegistry()
 
     Controls:CreateSectionTitle(content, descriptor.title, 16, -16)
-    Controls:CreateDescription(content, descriptor.description, 16, -44, 620)
+    local descFs = Controls:CreateDescription(content, descriptor.description, 16, -44, 620)
 
-    local y = -96
+    local descH = descFs and descFs.GetStringHeight and descFs:GetStringHeight() or 36
+    local y = math.min(-84, -44 - descH - 14)
     for _, control in ipairs(descriptor.controls) do
         y = self:BuildControl(content, moduleKey, control, y, registry)
     end
@@ -158,22 +179,29 @@ function SettingsPanel:Register()
         scale = self:BuildSubPanel("scale", Descriptors.scale),
     }
 
-    if Descriptors.lfg and (select(4, GetBuildInfo()) == 16001 or ns.IsDev) then
-        panels.lfg = self:BuildSubPanel("lfg", Descriptors.lfg)
+    if Descriptors.tweaks then
+        panels.tweaks = self:BuildSubPanel("tweaks", Descriptors.tweaks)
+    end
+
+    if Descriptors.loot and (select(4, GetBuildInfo()) == 16001 or ns.IsDev) then
+        panels.loot = self:BuildSubPanel("loot", Descriptors.loot)
     end
 
     self.rootPanel = root
     self.panels = panels
 
     local orderedKeys = {}
-    if Descriptors.lfg and (select(4, GetBuildInfo()) == 16001 or ns.IsDev) then
-        table.insert(orderedKeys, "lfg")
+    if Descriptors.loot and (select(4, GetBuildInfo()) == 16001 or ns.IsDev) then
+        table.insert(orderedKeys, "loot")
     end
     table.insert(orderedKeys, "nameplates")
     table.insert(orderedKeys, "tooltip")
     table.insert(orderedKeys, "chat")
     table.insert(orderedKeys, "audio")
     table.insert(orderedKeys, "scale")
+    if Descriptors.tweaks then
+        table.insert(orderedKeys, "tweaks")
+    end
 
     if Settings and Settings.RegisterCanvasLayoutCategory and Settings.RegisterCanvasLayoutSubcategory and Settings.RegisterAddOnCategory then
         self:RegisterModern(root, panels, orderedKeys)

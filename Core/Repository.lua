@@ -20,10 +20,27 @@ local function EnsureModuleTables(profile, defaults)
     TableUtils:EnsureTable(profile.modules, "audio", defaults.profile.modules.audio)
     TableUtils:EnsureTable(profile.modules, "tooltip", defaults.profile.modules.tooltip)
     TableUtils:EnsureTable(profile.modules, "chat", defaults.profile.modules.chat)
+    if profile.modules.chat and profile.modules.chat.arrowKeys == nil and defaults.profile.modules.chat then
+        profile.modules.chat.arrowKeys = defaults.profile.modules.chat.arrowKeys
+    end
     TableUtils:EnsureTable(profile.modules, "scale", defaults.profile.modules.scale)
-    TableUtils:EnsureTable(profile.modules, "lfg", defaults.profile.modules.lfg)
-    if profile.modules.lfg and profile.modules.lfg.autoWhisper == nil and defaults.profile.modules.lfg then
-        profile.modules.lfg.autoWhisper = defaults.profile.modules.lfg.autoWhisper
+    TableUtils:EnsureTable(profile.modules, "loot", defaults.profile.modules.loot)
+    if profile.modules.loot and defaults.profile.modules.loot then
+        if profile.modules.loot.enabled == nil then
+            profile.modules.loot.enabled = defaults.profile.modules.loot.enabled
+        end
+        if profile.modules.loot.minQuality == nil then
+            profile.modules.loot.minQuality = defaults.profile.modules.loot.minQuality
+        end
+        if profile.modules.loot.direction == nil then
+            profile.modules.loot.direction = defaults.profile.modules.loot.direction
+        end
+        if profile.modules.loot.anchorX == nil then
+            profile.modules.loot.anchorX = defaults.profile.modules.loot.anchorX
+        end
+        if profile.modules.loot.anchorY == nil then
+            profile.modules.loot.anchorY = defaults.profile.modules.loot.anchorY
+        end
     end
 end
 
