@@ -1,6 +1,6 @@
 ## Interface: 120107, 120105, 120100, 120000, 16001
 ## Title: Aiko QoL
-## Notes: QoL utilities (friendly nameplates, audio, tooltips, chat, UI scale).
+## Notes: QoL utilities (friendly nameplates, audio, tooltips, chat, UI scale, group finder).
 ## Author: Zagamant, Aiko
 ## Version: 1.9.13
 ## X-Curse-Project-ID: 1515225
@@ -22,6 +22,10 @@ Core/NotificationService.lua
 Core/TooltipService.lua
 Core/ChatService.lua
 Core/ScaleService.lua
+Core/LfgData.lua
+UI/LfgRowDecorator.lua
+UI/LfgFilterPanel.lua
+Core/LfgService.lua
 UI/LootToastView.lua
 Core/LootService.lua
 Core/App.lua

@@ -64,6 +64,15 @@ ns.UI.SettingsDescriptors = {
             { type = "input", path = "modules.scale.value", label = L["SCALE_SLIDER_LABEL"] },
         },
     },
+    lfg = {
+        moduleKey = "lfg",
+        title = L["TAB_LFG"] or "Group Finder",
+        description = L["DESC_LFG"] or "LFG Enhancements",
+        controls = {
+            { type = "checkbox", path = "modules.lfg.enabled", label = L["MODULE_ENABLED"] },
+            { type = "checkbox", path = "modules.lfg.autoWhisper", label = L["LFG_AUTO_WHISPER"] or "Auto-Whisper to Leader" },
+        },
+    },
     loot = {
         moduleKey = "loot",
         title = L["TAB_LOOT"] or "Loot",

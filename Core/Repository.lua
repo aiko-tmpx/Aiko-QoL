@@ -24,6 +24,10 @@ local function EnsureModuleTables(profile, defaults)
         profile.modules.chat.arrowKeys = defaults.profile.modules.chat.arrowKeys
     end
     TableUtils:EnsureTable(profile.modules, "scale", defaults.profile.modules.scale)
+    TableUtils:EnsureTable(profile.modules, "lfg", defaults.profile.modules.lfg)
+    if profile.modules.lfg and profile.modules.lfg.autoWhisper == nil and defaults.profile.modules.lfg then
+        profile.modules.lfg.autoWhisper = defaults.profile.modules.lfg.autoWhisper
+    end
     TableUtils:EnsureTable(profile.modules, "loot", defaults.profile.modules.loot)
     if profile.modules.loot and defaults.profile.modules.loot then
         if profile.modules.loot.enabled == nil then

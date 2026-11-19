@@ -9,6 +9,7 @@ ns.Defaults = {
             tooltip = { enabled = false, showZone = true, showDistance = true },
             chat = { enabled = false, whisperSound = false, arrowKeys = true },
             scale = { enabled = false, value = 0.59 },
+            lfg = { enabled = false, autoWhisper = true },
             loot = {
                 enabled = true,
                 minQuality = 3,

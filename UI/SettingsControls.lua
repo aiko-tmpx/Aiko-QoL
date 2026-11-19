@@ -516,6 +516,7 @@ function Controls:ApplyModuleStates(registry)
     local tooltipEnabled = Repository:Get("modules.tooltip.enabled") and true or false
     local chatEnabled = Repository:Get("modules.chat.enabled") and true or false
     local scaleEnabled = Repository:Get("modules.scale.enabled") and true or false
+    local lfgEnabled = Repository:Get("modules.lfg.enabled") and true or false
     local lootEnabled = Repository:Get("modules.loot.enabled") and true or false
 
     for _, item in ipairs(registry.items) do
@@ -530,6 +531,8 @@ function Controls:ApplyModuleStates(registry)
             enabled = chatEnabled
         elseif item.module == "scale" and item.path ~= "modules.scale.enabled" then
             enabled = scaleEnabled
+        elseif item.module == "lfg" and item.path ~= "modules.lfg.enabled" then
+            enabled = lfgEnabled
         elseif item.module == "loot" and item.path ~= "modules.loot.enabled" then
             enabled = lootEnabled
         end

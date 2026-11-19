@@ -183,6 +183,9 @@ function SettingsPanel:Register()
         panels.tweaks = self:BuildSubPanel("tweaks", Descriptors.tweaks)
     end
 
+    if Descriptors.lfg and (select(4, GetBuildInfo()) == 16001 or ns.IsDev) then
+        panels.lfg = self:BuildSubPanel("lfg", Descriptors.lfg)
+    end
     if Descriptors.loot and (select(4, GetBuildInfo()) == 16001 or ns.IsDev) then
         panels.loot = self:BuildSubPanel("loot", Descriptors.loot)
     end
@@ -191,6 +194,9 @@ function SettingsPanel:Register()
     self.panels = panels
 
     local orderedKeys = {}
+    if Descriptors.lfg and (select(4, GetBuildInfo()) == 16001 or ns.IsDev) then
+        table.insert(orderedKeys, "lfg")
+    end
     if Descriptors.loot and (select(4, GetBuildInfo()) == 16001 or ns.IsDev) then
         table.insert(orderedKeys, "loot")
     end
