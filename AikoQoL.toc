@@ -22,10 +22,6 @@ Core/NotificationService.lua
 Core/TooltipService.lua
 Core/ChatService.lua
 Core/ScaleService.lua
-Core/LfgData.lua
-UI/LfgRowDecorator.lua
-UI/LfgFilterPanel.lua
-Core/LfgService.lua
 UI/LootToastView.lua
 Core/LootService.lua
 Core/App.lua

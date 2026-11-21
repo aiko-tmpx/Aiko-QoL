@@ -64,15 +64,6 @@ ns.UI.SettingsDescriptors = {
             { type = "input", path = "modules.scale.value", label = L["SCALE_SLIDER_LABEL"] },
         },
     },
-    lfg = {
-        moduleKey = "lfg",
-        title = L["TAB_LFG"] or "Group Finder",
-        description = L["DESC_LFG"] or "LFG Enhancements",
-        controls = {
-            { type = "checkbox", path = "modules.lfg.enabled", label = L["MODULE_ENABLED"] },
-            { type = "checkbox", path = "modules.lfg.autoWhisper", label = L["LFG_AUTO_WHISPER"] or "Auto-Whisper to Leader" },
-        },
-    },
     loot = {
         moduleKey = "loot",
         title = L["TAB_LOOT"] or "Loot",
@@ -90,7 +81,6 @@ ns.UI.SettingsDescriptors = {
                     { value = 4, text = "|cffa335eeEpic|r and Above" },
                 },
             },
-            { type = "spacer" },
             {
                 type = "dropdown",
                 path = "modules.loot.direction",
@@ -99,6 +89,15 @@ ns.UI.SettingsDescriptors = {
                     { value = "UP", text = L["LOOT_DIR_UP"] or "Up" },
                     { value = "DOWN", text = L["LOOT_DIR_DOWN"] or "Down" },
                 },
+            },
+            {
+                type = "input",
+                path = "modules.loot.width",
+                label = L["LOOT_WIDTH"] or "Toast Width (px)",
+                min = 180,
+                max = 360,
+                integer = true,
+                default = 240,
             },
             { type = "spacer" },
             {
@@ -136,7 +135,7 @@ ns.UI.SettingsDescriptors = {
             { type = "sectionHeader", label = L["TWEAKS_SECTION_DISPLAY"] },
             {
                 type = "cvarCheckbox",
-                cvar = "nameplateShowOnlyNameForFriendlyPlayer",
+                cvar = "nameplateShowOnlyNameForFriendlyPlayerUnits",
                 label = L["NAMEPLATE_SHOW_ONLY_NAMES"],
                 tooltip = L["TWEAKS_NAMEPLATE_ONLY_NAMES_DESC"],
             },

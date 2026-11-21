@@ -44,11 +44,18 @@ local function SaveAnchorPosition()
     end
 end
 
+local function GetCurrentToastWidth()
+    if ns.Core.LootService and ns.Core.LootService.GetWidth then
+        return ns.Core.LootService:GetWidth()
+    end
+    return TOAST_WIDTH
+end
+
 local function EnsureAnchor()
     if anchorFrame then return anchorFrame end
 
     local f = CreateFrame("Frame", "AikoLootToastAnchor", UIParent, "BackdropTemplate")
-    f:SetSize(TOAST_WIDTH, TOAST_HEIGHT)
+    f:SetSize(GetCurrentToastWidth(), TOAST_HEIGHT)
     f:SetFrameStrata("DIALOG")
     f:SetClampedToScreen(true)
     f:EnableMouse(true)
@@ -194,7 +201,7 @@ end)
 
 local function CreateToastFrame()
     local t = CreateFrame("Button", nil, UIParent, "BackdropTemplate")
-    t:SetSize(TOAST_WIDTH, TOAST_HEIGHT)
+    t:SetSize(GetCurrentToastWidth(), TOAST_HEIGHT)
     t:SetFrameStrata("HIGH")
     t:SetClampedToScreen(true)
     t:EnableMouse(true)
@@ -207,7 +214,7 @@ local function CreateToastFrame()
         edgeSize = 14,
         insets = { left = 3, right = 3, top = 3, bottom = 3 }
     })
-    t:SetBackdropColor(0.08, 0.08, 0.09, 0.94)
+    t:SetBackdropColor(0.07, 0.07, 0.08, 0.88)
     t:SetBackdropBorderColor(0.28, 0.25, 0.22, 0.85)
 
     -- Clean cropped Item Icon
@@ -260,7 +267,7 @@ local function CreateToastFrame()
             self.isMouseOver = true
             hoveredCount = hoveredCount + 1
         end
-        self:SetBackdropColor(0.14, 0.13, 0.14, 0.98)
+        self:SetBackdropColor(0.12, 0.12, 0.13, 0.96)
 
         -- Freeze: restore full visibility to any toast that was fading out
         for _, active in ipairs(activeToasts) do
@@ -283,7 +290,7 @@ local function CreateToastFrame()
             self.isMouseOver = false
             hoveredCount = math.max(0, hoveredCount - 1)
         end
-        self:SetBackdropColor(0.08, 0.08, 0.09, 0.94)
+        self:SetBackdropColor(0.07, 0.07, 0.08, 0.88)
         GameTooltip:Hide()
 
         -- When mouse leaves all toasts, ensure remaining time is at least 2.5s
@@ -328,10 +335,14 @@ function LootToastView:Spawn(winnerName, playerClass, itemLink, quality, rollTyp
     end
 
     local toast = GetToastFromPool()
+    toast:SetSize(GetCurrentToastWidth(), TOAST_HEIGHT)
     toast.itemLink = itemLink
 
     -- 1. Icon & Quality Border (100% fail-safe against uncached/nil values)
-    local _, _, _, _, _, _, _, _, _, itemIcon = C_Item.GetItemInfo(itemLink)
+    local itemID = tonumber(itemLink:match("item:(%d+)"))
+    local itemIcon = (C_Item and C_Item.GetItemIconByID and itemID and C_Item.GetItemIconByID(itemID))
+        or (GetItemIcon and itemID and GetItemIcon(itemID))
+        or select(10, C_Item.GetItemInfo(itemLink))
     local tex = itemIcon or 134400
     toast.Icon:SetTexture(tex)
     toast.Icon:Show()
@@ -391,7 +402,14 @@ function LootToastView:Update()
     if ns.Core.LootService then
         x, y = ns.Core.LootService:GetAnchorCoords()
     end
+    local w = GetCurrentToastWidth()
     local a = EnsureAnchor()
+    a:SetSize(w, TOAST_HEIGHT)
     a:ClearAllPoints()
     a:SetPoint("CENTER", UIParent, "CENTER", x, y)
+
+    for _, active in ipairs(activeToasts) do
+        active:SetSize(w, TOAST_HEIGHT)
+    end
+    RepositionToasts()
 end

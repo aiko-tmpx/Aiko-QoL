@@ -61,7 +61,7 @@ function SettingsPanel:BuildControl(parent, moduleKey, control, y, registry)
         return y - 34
     end
     if control.type == "input" then
-        Controls:CreateInputControl(parent, control.label, control.path, y, registry, moduleKey)
+        Controls:CreateInputControl(parent, control.label, control.path, y, registry, moduleKey, control)
         return y - 48
     end
     if control.type == "dropdown" then
@@ -73,7 +73,7 @@ function SettingsPanel:BuildControl(parent, moduleKey, control, y, registry)
         return y - 36
     end
     if control.type == "spacer" then
-        return y - 8
+        return y - (control.height or 16)
     end
     if control.type == "headerRow" then
         Controls:BuildZoneHeader(parent, y, registry)

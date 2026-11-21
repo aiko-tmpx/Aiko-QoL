@@ -152,7 +152,8 @@ function Controls:CreateCVarCheckbox(parent, label, cvar, y, registry, moduleKey
 
     if tooltipText or label then
         checkbox:SetScript("OnEnter", function(self)
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT", 380, 0)
+            local textWidth = textRegion and math.ceil(textRegion:GetStringWidth()) or 200
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT", textWidth + 12, 0)
             GameTooltip:AddLine(label or "", 1, 1, 1)
             if tooltipText and tooltipText ~= "" then
                 GameTooltip:AddLine(tooltipText, 1, 0.82, 0, true)
@@ -276,7 +277,13 @@ function Controls:CreateCVarInput(parent, label, cvar, y, registry, moduleKey, t
     return editbox
 end
 
-function Controls:CreateInputControl(parent, label, path, y, registry, moduleKey)
+function Controls:CreateInputControl(parent, label, path, y, registry, moduleKey, item)
+    item = item or {}
+    local minVal = item.min or 0.30
+    local maxVal = item.max or 1.50
+    local defaultVal = item.default or (item.integer and 240 or 0.59)
+    local isInteger = item.integer
+
     local labelFs = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     labelFs:SetPoint("TOPLEFT", 16, y)
     labelFs:SetText(label or "")
@@ -293,13 +300,22 @@ function Controls:CreateInputControl(parent, label, path, y, registry, moduleKey
         isCommitting = true
         local val = tonumber(editbox:GetText())
         if val then
-            val = math.max(0.30, math.min(1.50, val))
-            editbox:SetText(string.format("%.2f", val))
+            val = math.max(minVal, math.min(maxVal, val))
+            if isInteger then
+                val = math.floor(val + 0.5)
+                editbox:SetText(string.format("%d", val))
+            else
+                editbox:SetText(string.format("%.2f", val))
+            end
             Repository:Set(path, val)
             ns.Core.App:Update()
         else
-            local current = tonumber(Repository:Get(path)) or 0.59
-            editbox:SetText(string.format("%.2f", current))
+            local current = tonumber(Repository:Get(path)) or defaultVal
+            if isInteger then
+                editbox:SetText(string.format("%d", math.floor(current + 0.5)))
+            else
+                editbox:SetText(string.format("%.2f", current))
+            end
         end
         editbox:ClearFocus()
         isCommitting = false
@@ -308,16 +324,24 @@ function Controls:CreateInputControl(parent, label, path, y, registry, moduleKey
     editbox:SetScript("OnEnterPressed", Commit)
     editbox:SetScript("OnEscapePressed", function(self)
         self:ClearFocus()
-        local current = tonumber(Repository:Get(path)) or 0.59
-        self:SetText(string.format("%.2f", current))
+        local current = tonumber(Repository:Get(path)) or defaultVal
+        if isInteger then
+            self:SetText(string.format("%d", math.floor(current + 0.5)))
+        else
+            self:SetText(string.format("%.2f", current))
+        end
     end)
 
     local container = {
         editbox = editbox,
         labelFs = labelFs,
         Refresh = function(self)
-            local current = tonumber(Repository:Get(path)) or 0.59
-            self.editbox:SetText(string.format("%.2f", current))
+            local current = tonumber(Repository:Get(path)) or defaultVal
+            if isInteger then
+                self.editbox:SetText(string.format("%d", math.floor(current + 0.5)))
+            else
+                self.editbox:SetText(string.format("%.2f", current))
+            end
         end,
         SetLogicalEnabled = function(self, enabled)
             if enabled then
@@ -516,7 +540,6 @@ function Controls:ApplyModuleStates(registry)
     local tooltipEnabled = Repository:Get("modules.tooltip.enabled") and true or false
     local chatEnabled = Repository:Get("modules.chat.enabled") and true or false
     local scaleEnabled = Repository:Get("modules.scale.enabled") and true or false
-    local lfgEnabled = Repository:Get("modules.lfg.enabled") and true or false
     local lootEnabled = Repository:Get("modules.loot.enabled") and true or false
 
     for _, item in ipairs(registry.items) do
@@ -531,8 +554,6 @@ function Controls:ApplyModuleStates(registry)
             enabled = chatEnabled
         elseif item.module == "scale" and item.path ~= "modules.scale.enabled" then
             enabled = scaleEnabled
-        elseif item.module == "lfg" and item.path ~= "modules.lfg.enabled" then
-            enabled = lfgEnabled
         elseif item.module == "loot" and item.path ~= "modules.loot.enabled" then
             enabled = lootEnabled
         end
